@@ -1,0 +1,156 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="原始程式檔">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="標頭檔">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="資源檔">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="problem_base.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="problem_DTLZ.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="problem_factory.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="problem_self.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="problem_ZDT.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_comparator.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_crossover.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_environmental_selection.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_individual.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_initialization.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_mutation.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_nondominated_sort.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_nsgaiii.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_population.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_reference_point.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="aux_math.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="aux_misc.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="exp_experiment.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="exp_indicator.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="gnuplot_interface.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="alg_refinement.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="ctimer.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="problem_DTLZ.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="problem_factory.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="problem_self.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="problem_ZDT.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_comparator.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_crossover.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_environmental_selection.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_individual.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_initialization.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_mutation.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_nondominated_sort.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_nsgaiii.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_reference_point.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="aux_math.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="aux_misc.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="exp_experiment.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="exp_indicator.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="gnuplot_interface.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="log.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="alg_refinement.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+    <ClCompile Include="ctimer.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
