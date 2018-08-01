@@ -14,154 +14,62 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	num_objs_(num_objs)
 {
 	// define the domain of variables here
-	//lbs_.resize(num_vars_, 0.0);
-	//ubs_.resize(num_vars_, 1.0);
-	ifstream ifile("Experiments//" + name_ + ".dat");
+
+	ifstream ifile("Experiments//" + name_ + ".txt");
 	if (!ifile)
 	{
-		cout << "Not find " << name_ << endl;
+		cout << "Not find " << name_ << endl; getchar();
+		return;
 	}
 	else cout << "Read the file -- " << name_ << endl;
 
-	string pname, dummy;
-
-	ifile >> dummy >> dummy >> pname; // problem.name = [ ] //NAME : E016-03m
-
-									  //cout << "pname = " << pname << endl;
-	int dummy_num = 3;
-	/*
-	\n
-	COMMENT : Christofides, Mingozzi and Toth, 1981
-	TYPE : CVRP
-	*/
-	while (dummy_num--)
-	{
-		getline(ifile, dummy);
-	}
-
-	ifile >> dummy >> dummy >> dimension_; //DIMENSION : 16
-	cout << "dimension = " << dimension_ << endl;
-	num_vars_ = dimension_;
-	dummy_num = 2;
-	while (dummy_num--) getline(ifile, dummy); // \n+ EDGE_WEIGHT_TYPE : EUC_2D
-
-	ifile >> dummy >> dummy >> capacity_;  //CAPACITY : 90
-	ifile >> dummy >> dummy >> num_vehicles_; //VEHICLES : 3
-	cout << "capacity = " << capacity_ << endl;
-	cout << "vehicle num = " << num_vehicles_ << endl;
-	dummy_num = 2;
-	while (dummy_num--) getline(ifile, dummy); // \n + NODE_COORD_SECTION
-
-	for (size_t i = 0; i<dimension_; i++)
-	{
-		Node tmp;
-		ifile >> dummy >> tmp.x >> tmp.y;
-		//cout << tmp.x << " " << tmp.y << endl;
-		this->node_.push_back(Node(tmp));
-	}
-	//cout << node_.size() << endl;
-	/*for(int i=0;i<node_.size();i++)
-	cout << node_[i].x << " " << node_[i].y << endl;  Wu*/
-
-	//calculate distance---------------------------------
-	for (size_t i = 0; i < dimension_; i++)
+	ifile >> num_customers_ >> curb_weight_ >> maxload_;
+	ifile >> lowest_speed_ >> highest_speed_;
+	num_node_ = num_customers_ + 1;
+	//distance 
+	for (int i = 0; i < num_node_; i++)
 	{
 		vector <double> dis_one_array;
-		for (size_t j = 0; j < dimension_; j++)
+		for (int j = 0; j < num_node_;j++)
 		{
-			double dis_tmp = sqrt(pow(node_[i].x - node_[j].x, 2) + pow(node_[i].y - node_[j].y, 2));
-			dis_one_array.push_back(dis_tmp);
-			//cout << dis_tmp << ' ';
+			double tmp_dis;
+			ifile >> tmp_dis;
+			dis_one_array.push_back(tmp_dis);
 		}
 		distance_.push_back(dis_one_array);
-		//cout << endl;
 	}
-	//----------------------------------------------------
 
-
-	dummy_num = 2;
-	while (dummy_num--) getline(ifile, dummy); // \n + DEMAND_SECTION
-
-	for (size_t i = 0; i<dimension_; i++)
+	//print distance board
+	/*for (int i = 0; i < distance_.size(); i++)
 	{
-		int id, demand_tmp;
-		ifile >> id >> demand_tmp;
-		//cout << id << " " << demand_tmp << endl;
-		node_[id - 1].demand = demand_tmp;
-	}
+		for (int j = 0; j < distance_[i].size(); j++)
+		{
+			cout << distance_[i][j] << " ";
+		}
+		cout << endl;
+	}*/
 
-	dummy_num = 2;
-	while (dummy_num--) getline(ifile, dummy); // \n + DEPOT_SECTION
-
-	ifile >> depot_section_;
-
-	num_dimen_ = 8;
-	// --- 分區
-		// --- 初始化
-	for (int i = 0; i < num_dimen_; i++)
+	for (int i = 0; i < num_node_; i++)
 	{
-		dimen_.push_back(vector<int>());
-	}
-		// --- 開始分區
-	for (size_t i = 0; i < dimension_; i += 1)
-	{
-		if (i + 1 == depot_section_) continue;
-		if (node_[i].x - node_[depot_section_ - 1].x >= 0 && node_[i].y - node_[depot_section_ - 1].y > 0)
+		Node tmp_node;
+		ifile >> tmp_node.number >> tmp_node.name >> tmp_node.demand >> tmp_node.ready_time >> tmp_node.due_time >> tmp_node.service_time;
+		if (tmp_node.service_time == 0)
 		{
-			if ((node_[i].x - node_[depot_section_ - 1].x) != 0 && ((node_[i].y - node_[depot_section_ - 1].y) / (node_[i].x - node_[depot_section_ - 1].x)) <= 1)
-				dimen_[0].push_back(i + 1);
-			else
-				dimen_[1].push_back(i + 1);
+			depot_section_ = tmp_node.number;
 		}
-		else if (node_[i].x - node_[depot_section_ - 1].x < 0 && node_[i].y - node_[depot_section_ - 1].y >= 0)
-		{
-			if (((node_[i].y - node_[depot_section_ - 1].y) / (node_[i].x - node_[depot_section_ - 1].x)) <= -1)
-				dimen_[2].push_back(i + 1);
-			else
-				dimen_[3].push_back(i + 1);
-		}
-		else if ((node_[i].x - node_[depot_section_ - 1].x) <= 0 && (node_[i].y - node_[depot_section_ - 1].y) < 0)
-		{
-			if ((node_[i].x - node_[depot_section_ - 1].x) != 0 && ((node_[i].y - node_[depot_section_ - 1].y) / (node_[i].x - node_[depot_section_ - 1].x)) <= 1)
-				dimen_[4].push_back(i + 1);
-			else
-				dimen_[5].push_back(i + 1);
-		}
-		else
-		{
-			if (((node_[i].y - node_[depot_section_ - 1].y) / (node_[i].x - node_[depot_section_ - 1].x)) <= -1)
-				dimen_[6].push_back(i + 1);
-			else
-				dimen_[7].push_back(i + 1);
-		}
-	}
-		// --- 重組成ori_route
-	ori_route_.resize(dimension_);
-	ori_route_[0] = depot_section_;
-	size_t x_num = 1;
-	for (size_t i = 0; i < num_dimen_; i++)
-	{
-		for (size_t j = 0; j < dimen_[i].size(); j++)
-		{
-			ori_route_[x_num] = dimen_[i][j];
-			x_num++;
-		}
+		node_.push_back(tmp_node);
 	}
 
-
-	//Wu*
-	lbs_.resize(dimension_ + num_vehicles_, 1.0);
-	ubs_.resize(dimension_ + num_vehicles_, dimension_); //改成在dimension 之間隨機
-
-	for (size_t i = 0; i<dimension_ + num_vehicles_; i++)
+	for (int i = 0; i < num_node_; i++)
 	{
-		lbs_[i] = 0.0;
-		ubs_[i] = num_vehicles_;
+		cout << node_[i].number << " " << node_[i].name << " " << node_[i].demand << " " << node_[i].ready_time << " " << node_[i].due_time << " " << node_[i].service_time << endl;
 	}
-	//*Wu
-	feasible_dis_ = 5e3;
+
+	//num_vars_ = num_node_; //我不知道這有什麼意思..
+
+	//feasible_dis_ = 5e3; //還不確定
 	cout << "Problem set ------- OK" << endl;
-	//system("pause");
+	getchar();
 
 }
 // -----------------------------------------------------------
@@ -177,22 +85,22 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 	{
 		//there is no depot  -- initial dis_board = 0.0
 		vector <vector<double>> dis_board;
-		for (size_t i = 0; i < prob.dimension() - 1; i++)
+		for (size_t i = 0; i < prob.num_node() - 1; i++)
 		{
 			dis_board.push_back(vector<double>());
-			for (size_t j = 0; j < prob.dimension() - 1; j++)
+			for (size_t j = 0; j < prob.num_node() - 1; j++)
 			{
 				dis_board[i].push_back(0.0);
 			}
 		}
 
-		//1~dimension-1 , no depot  --- calculate dis_board
+		//1~num_node-1 , no depot  --- calculate dis_board
 		/************************************************************************************
-		dis_board 只有客戶點，所以0~dimension-1，dis_board[0][0]指的昰 (倉庫->客戶第一個->倉庫) 的距離
+		dis_board 只有客戶點，所以0~num_node-1，dis_board[0][0]指的昰 (倉庫->客戶第一個->倉庫) 的距離
 		超越載重就會用 9999999 來破壞解
 		dis_board[i][j]的意思就是 (倉庫 -> i客戶 -> ...(依序) -> j客戶 -> 倉庫) 的距離
 		*************************************************************************************/
-		for (size_t i = 0; i<prob.dimension() - 1; i++)
+		for (size_t i = 0; i<prob.num_node() - 1; i++)
 		{
 			bool overload = false;
 			double dis_temp = 2 * distance_[x[i + 1] - 1][prob.depot() - 1], //Ex. 0-1-0,0-2-0
@@ -200,7 +108,7 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 			//cout << "demand 1 " << n[x[i + 1] - 1].demand << endl;
 			dis_board[i][i] = dis_temp;
 			//cout << "dis_board[" << i << "][" << i << "] = " << dis_temp << endl;
-			for (size_t j = i + 1; j < prob.dimension() - 1; j++)
+			for (size_t j = i + 1; j < prob.num_node() - 1; j++)
 			{
 				if (overload)
 				{
@@ -212,7 +120,7 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 				//cout << "demand 2 " << n[x[j+1] - 1].demand << endl;
 				//system("pause");
 
-				if (load > prob.capacity())
+				if (load > prob.maxload())
 				{
 					//cout << "overload !" << endl;
 					//dis_temp = 999999;//old
@@ -237,7 +145,7 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 		*/
 		vector<vector<double>> dp; //2維DP 
 								   //initial dp  = 0.0---------------------------------------------
-		for (size_t i = 0; i < prob.dimension(); i++)
+		for (size_t i = 0; i < prob.num_node(); i++)
 		{
 			dp.push_back(vector<double>());
 			for (size_t j = 0; j < prob.num_vehicles() + 2; j++)
@@ -257,7 +165,7 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 		//--------------------------------------------------------
 		//cout << "dp 初始化完成" << endl;
 		vector<vector<size_t>> cut_point;
-		for (size_t i = 0; i < prob.dimension(); i++)
+		for (size_t i = 0; i < prob.num_node(); i++)
 		{
 			cut_point.push_back(vector<size_t>());
 		}
@@ -273,7 +181,7 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 		for (size_t c = 1; c < prob.num_vehicles(); c += 1) //c+1代表可多用1台車
 		{
 			//cout << "現在可用" << c + 1 << "台車" << endl;
-			for (size_t i = 1; i < prob.dimension(); i += 1) //dimension is num of points
+			for (size_t i = 1; i < prob.num_node(); i += 1) //num_node is num of points
 			{
 				//dp[i] = dp[i-1] + dis_board[i - 1][i - 1];
 				double min_dis = dis_board[0][i - 1]; //第一次是 = 0-1-0(原本有+dp[0]可是dp[0]就always是0)
@@ -327,7 +235,7 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 			}
 		}
 		vector <size_t> new_cut_point;
-		size_t now_index = prob.dimension() - 1, car = prob.num_vehicles() - 2;
+		size_t now_index = prob.num_node() - 1, car = prob.num_vehicles() - 2;
 		while (1)
 		{
 			if (cut_point[now_index][car] == 0)break;
@@ -339,10 +247,10 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 		}
 
 		indv->set_num_vehicles(prob.num_vehicles());
-		//cout << "dp[prob.num_vehicles() - 1] = " << dp[prob.dimension() - 1][prob.num_vehicles() - 1] << endl;
-		//if (dp[prob.dimension() - 1][prob.num_vehicles()-1] >= 999998)
+		//cout << "dp[prob.num_vehicles() - 1] = " << dp[prob.num_node() - 1][prob.num_vehicles() - 1] << endl;
+		//if (dp[prob.num_node() - 1][prob.num_vehicles()-1] >= 999998)
 		//{
-		//	if (dp[prob.dimension() - 1][prob.num_vehicles()] >= 999998) {
+		//	if (dp[prob.num_node() - 1][prob.num_vehicles()] >= 999998) {
 		//		indv->set_num_vehicles(prob.num_vehicles() + 2);
 		//	}
 		//	else {
@@ -361,9 +269,9 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 		//插入倉庫到正確位置
 		CIndividual::TDecVec &routes = indv->routes();
 		routes = x;
-		/*for (size_t i = 0; i < cut_point[prob.dimension() - 1].size(); i++)
+		/*for (size_t i = 0; i < cut_point[prob.num_node() - 1].size(); i++)
 		{
-		routes.insert(routes.begin() + cut_point[prob.dimension() - 1][i] + i + 1, prob.depot());
+		routes.insert(routes.begin() + cut_point[prob.num_node() - 1][i] + i + 1, prob.depot());
 		}*/
 		for (size_t i = 0; i < new_cut_point.size(); i++)
 		{
@@ -398,21 +306,21 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 	{
 		//there is no depot  -- initial dis_board = 0.0
 		vector <vector<double>> dis_board;
-		for (size_t i = 0; i < prob.dimension() - 1; i++)
+		for (size_t i = 0; i < prob.num_node() - 1; i++)
 		{
 			dis_board.push_back(vector<double>());
-			for (size_t j = 0; j < prob.dimension() - 1; j++)
+			for (size_t j = 0; j < prob.num_node() - 1; j++)
 			{
 				dis_board[i].push_back(0.0);
 			}
 		}
-		//1~dimension-1 , no depot  --- calculate dis_board
+		//1~num_node-1 , no depot  --- calculate dis_board
 		/************************************************************************************
-		dis_board 只有客戶點，所以0~dimension-1，dis_board[0][0]指的昰 (倉庫->客戶第一個->倉庫) 的距離
+		dis_board 只有客戶點，所以0~num_node-1，dis_board[0][0]指的昰 (倉庫->客戶第一個->倉庫) 的距離
 		超越載重就會用 weight_punishment = 1e8 來破壞解
 		dis_board[i][j]的意思就是 (倉庫 -> i客戶 -> ...(依序) -> j客戶 -> 倉庫) 的距離
 		*************************************************************************************/
-		for (size_t i = 0; i<prob.dimension() - 1; i++)
+		for (size_t i = 0; i<prob.num_node() - 1; i++)
 		{
 			bool overload = false;
 			double dis_temp = 2 * distance_[x[i + 1] - 1][prob.depot() - 1], //Ex. 0-1-0,0-2-0
@@ -420,7 +328,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 			//cout << "demand 1 " << n[x[i + 1] - 1].demand << endl;
 			dis_board[i][i] = dis_temp;
 			//cout << "dis_board[" << i << "][" << i << "] = " << dis_temp << endl;
-			for (size_t j = i + 1; j < prob.dimension() - 1; j++)
+			for (size_t j = i + 1; j < prob.num_node() - 1; j++)
 			{
 				if (overload)
 				{
@@ -428,7 +336,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 					continue;
 				}
 				load += n[x[j + 1] - 1].demand;
-				if (load > prob.capacity())
+				if (load > prob.maxload())
 				{
 					dis_temp = weight_punishment;
 					overload = true;
@@ -445,24 +353,24 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 		//計算emission board
 		//initial emission board = 0.0
 		vector<vector<double>> emission_board;
-		for (size_t i = 0; i < prob.dimension(); i++)
+		for (size_t i = 0; i < prob.num_node(); i++)
 		{
 			emission_board.push_back(vector<double>());
-			for (size_t j = 0; j < prob.dimension() - 1; j++)
+			for (size_t j = 0; j < prob.num_node() - 1; j++)
 			{
 				emission_board[i].push_back(0.0);
 			}
 		}
 		//caculate emission 
-		for (size_t i = 0; i<prob.dimension() - 1; i++)
+		for (size_t i = 0; i<prob.num_node() - 1; i++)
 		{
-			double emi_temp = m_ * ((FCR_full_ - FCR_empty_) * n[x[i + 1] - 1].demand / capacity_ + FCR_empty_) * distance_[x[i + 1] - 1][prob.depot() - 1],
+			double emi_temp = m_ * ((FCR_full_ - FCR_empty_) * n[x[i + 1] - 1].demand / maxload_ + FCR_empty_) * distance_[x[i + 1] - 1][prob.depot() - 1],
 				load_now = n[x[i + 1] - 1].demand,
 				dis_temp = distance_[x[i + 1] - 1][prob.depot() - 1];
 			//dis_board[i][i] = dis_temp;
 			emission_board[i][i] = emi_temp;
 			//cout << "dis_board[" << i << "][" << i << "] = " << dis_temp << endl;
-			for (size_t j = i + 1; j < prob.dimension() - 1; j++)
+			for (size_t j = i + 1; j < prob.num_node() - 1; j++)
 			{
 				if (dis_board[i][j] == weight_punishment)
 				{
@@ -473,7 +381,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 				
 				dis_temp += distance_[x[j + 1] - 1][x[j] - 1]; //0-1-0+1-2
 															   //cout << "+" << sqrt(pow(n[x[j + 1] - 1].x - n[x[j] - 1].x, 2) + pow(n[x[j + 1] - 1].y - n[x[j] - 1].y, 2)) << endl;
-				emi_temp = m_ * ((FCR_full_ - FCR_empty_) * load_now / capacity_ + FCR_empty_) * dis_temp;
+				emi_temp = m_ * ((FCR_full_ - FCR_empty_) * load_now / maxload_ + FCR_empty_) * dis_temp;
 				emission_board[i][j] = emi_temp;
 			}
 		}
@@ -485,7 +393,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 		*/
 		vector<vector<double>> dp; //2維DP 
 								   //initial dp  = 0.0---------------------------------------------
-		for (size_t i = 0; i < prob.dimension(); i++)
+		for (size_t i = 0; i < prob.num_node(); i++)
 		{
 			dp.push_back(vector<double>());
 			for (size_t j = 0; j < prob.num_vehicles() + 2; j++)
@@ -503,7 +411,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 		//--------------------------------------------------------
 		//cout << "dp 初始化完成" << endl;
 		vector<vector<size_t>> cut_point;
-		for (size_t i = 0; i < prob.dimension(); i++)
+		for (size_t i = 0; i < prob.num_node(); i++)
 		{
 			cut_point.push_back(vector<size_t>());
 		}
@@ -515,7 +423,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 			//car = 1 其實在算2台車
 			feasible = false;
 			//cout << "現在用" << car << "台車" << endl;
-			for (size_t i = 1; i < prob.dimension(); i += 1) //dimension is num of points
+			for (size_t i = 1; i < prob.num_node(); i += 1) //num_node is num of points
 			{
 				//dp[i] = dp[i-1] + dis_board[i - 1][i - 1];
 				double min_value = obj1 * dis_board[0][i - 1] + obj2 * emission_board[0][i - 1]; //第一次是 = 0-1-0(原本有+dp[0]可是dp[0]就always是0)
@@ -578,9 +486,9 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 				
 			}
 			//getchar();
-			if (dp[prob.dimension() - 1][car]< weight_punishment)
+			if (dp[prob.num_node() - 1][car]< weight_punishment)
 			{
-				//printf("dp[%d][%d] = %lf\n", prob.dimension() - 1, car, dp[prob.dimension() - 1][car]);
+				//printf("dp[%d][%d] = %lf\n", prob.num_node() - 1, car, dp[prob.num_node() - 1][car]);
 				if (car >= prob.num_vehicles()-1) {
 					feasible = true;
 					break;
@@ -592,8 +500,8 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 		indv->set_num_vehicles(car+1);
 		car -= 1;//car 從0開始就是用1台車所以要-1
 		vector <size_t> new_cut_point;
-		//size_t now_index = prob.dimension() - 1, car = prob.num_vehicles() - 2;//0607改
-		size_t now_index = prob.dimension() - 1;
+		//size_t now_index = prob.num_node() - 1, car = prob.num_vehicles() - 2;//0607改
+		size_t now_index = prob.num_node() - 1;
 
 		while (1)
 		{
@@ -672,7 +580,7 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 		{
 			load_check += node_[routes[i] - 1].demand;
 			//cout << "load = " << load_check << endl;
-			if (load_check > capacity_)
+			if (load_check > maxload_)
 			{
 				f[0] = infeasible_value;
 				f[1] = infeasible_value;
@@ -742,8 +650,8 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 			next_index = i;
 			for (size_t j = now_index; j<next_index; j++)
 			{
-				f[1] += ((FCR_full_ - FCR_empty_) * load / capacity_ + FCR_empty_) * v_dis[j]; //[ZHANG]
-				//f[1] += (a_ * load / capacity_ + b_) * v_dis[j];//JEMEI
+				f[1] += ((FCR_full_ - FCR_empty_) * load / maxload_ + FCR_empty_) * v_dis[j]; //[ZHANG]
+				//f[1] += (a_ * load / maxload_ + b_) * v_dis[j];//JEMEI
 				//cout << "emission = " << f[1] << endl;
 				//getchar();
 				load -= node()[routes[j + 1] - 1].demand;

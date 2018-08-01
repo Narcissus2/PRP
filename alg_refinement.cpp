@@ -223,7 +223,7 @@ bool CReDispatchRefinement::operator()(CIndividual *indv, const BProblem &prob) 
 					//cout << "j = " << j << endl;
 					if (j != index && j >= 0)
 					{
-						if (v_load[j] + n[r[index][i] - 1].demand <= prob.capacity())
+						if (v_load[j] + n[r[index][i] - 1].demand <= prob.maxload())
 						{
 							r[j].push_back(r[index][i]);
 							v_load[j] += n[r[index][i] - 1].demand;
@@ -235,7 +235,7 @@ bool CReDispatchRefinement::operator()(CIndividual *indv, const BProblem &prob) 
 					//if (j < 0) j = num;
 					if (k != index && k < num)
 					{
-						if (v_load[k] + n[r[index][i] - 1].demand <= prob.capacity())
+						if (v_load[k] + n[r[index][i] - 1].demand <= prob.maxload())
 						{
 							//r[k].push_back(r[index][i]);
 							r[k].insert(r[k].begin(), r[index][i]);
@@ -523,12 +523,12 @@ bool CPartNEH2Object::operator()(CIndividual *indv, const BProblem &prob,const i
 					routes.insert(routes.begin() + k, now_cus);
 					double now_load = n[routes[rand_head] - 1].demand;
 					double total_dis = distance[routes[rand_head - 1] - 1][routes[rand_head] - 1];
-					double total_value = m *((FCR_full_ - FCR_empty_) * now_load / prob.capacity())  * total_dis;
+					double total_value = m *((FCR_full_ - FCR_empty_) * now_load / prob.maxload())  * total_dis;
 					for (size_t h = rand_head + 1; h <= j; h++)
 					{
 						now_load += n[routes[h] - 1].demand;
 						total_dis += distance[routes[h - 1] - 1][routes[h] - 1];
-						total_value += m * ((FCR_full_ - FCR_empty_) * now_load / prob.capacity())  * total_dis;
+						total_value += m * ((FCR_full_ - FCR_empty_) * now_load / prob.maxload())  * total_dis;
 					}
 					total_dis += distance[routes[rand_tail + 1] - 1][routes[j] - 1];
 					total_value += m * FCR_empty_ * total_dis;
@@ -577,12 +577,12 @@ bool CPartNN2Object::operator()(CIndividual *indv, const BProblem &prob,const in
 			{
 				size_t target = j;
 				//double local_dis = distance[routes[j - 1] - 1][routes[j] - 1];
-				double local_value = obj1 * distance[routes[j - 1] - 1][routes[j] - 1] + obj2 * m *((FCR_full_ - FCR_empty_) * (prob.capacity()-n[routes[j - 1] - 1].demand) / prob.capacity())  * distance[routes[j - 1] - 1][routes[j] - 1];
+				double local_value = obj1 * distance[routes[j - 1] - 1][routes[j] - 1] + obj2 * m *((FCR_full_ - FCR_empty_) * (prob.maxload()-n[routes[j - 1] - 1].demand) / prob.maxload())  * distance[routes[j - 1] - 1][routes[j] - 1];
 
 				for (size_t k = j + 1; k <= rand_tail; k++)
 				{
 					//double temp_dis = distance[routes[j - 1] - 1][routes[k] - 1];
-					double temp_value = obj1 * distance[routes[j - 1] - 1][routes[k] - 1] + obj2 * m *((FCR_full_ - FCR_empty_) * (prob.capacity() - n[routes[j - 1] - 1].demand) / prob.capacity())  * distance[routes[j - 1] - 1][routes[k] - 1];
+					double temp_value = obj1 * distance[routes[j - 1] - 1][routes[k] - 1] + obj2 * m *((FCR_full_ - FCR_empty_) * (prob.maxload() - n[routes[j - 1] - 1].demand) / prob.maxload())  * distance[routes[j - 1] - 1][routes[k] - 1];
 					//indv->add_eva();
 					if (temp_value < local_value)
 					{
@@ -619,14 +619,14 @@ bool CTwoOpt2Object::operator()(CIndividual *indv, const BProblem &prob, const i
 			//best_dis 先弄成原路線distance
 			double best_dis = distance[routes[head - 1] - 1][routes[head] - 1],
 				now_load = n[routes[head] - 1].demand,
-				best_value =  m * ((FCR_full_ - FCR_empty_) * now_load / prob.capacity())*best_dis;
+				best_value =  m * ((FCR_full_ - FCR_empty_) * now_load / prob.maxload())*best_dis;
 			//cout << "origial route = ";
 			for (size_t j = head + 1; j < tail; j++)
 			{
 				//cout << routes[j - 1] << ' ';
 				best_dis += distance[routes[j - 1] - 1][routes[j] - 1];
 				now_load += n[routes[j] - 1].demand;
-				best_value +=  m * ((FCR_full_ - FCR_empty_) * now_load / prob.capacity()) * best_dis;
+				best_value +=  m * ((FCR_full_ - FCR_empty_) * now_load / prob.maxload()) * best_dis;
 			}
 			best_dis += distance[routes[tail - 1] - 1][routes[tail] - 1];
 			best_value += m * FCR_empty_ * best_dis;
@@ -665,7 +665,7 @@ bool CTwoOpt2Object::operator()(CIndividual *indv, const BProblem &prob, const i
 					//算new_route的distance
 					double new_dis = distance[routes[head - 1] - 1][new_route[0] - 1],
 						   new_load = n[new_route[0] - 1].demand,
-						   new_value =  m * ((FCR_full_ - FCR_empty_) * new_load / prob.capacity())*new_dis;
+						   new_value =  m * ((FCR_full_ - FCR_empty_) * new_load / prob.maxload())*new_dis;
 
 					//cout << "tail - head = " << tail - head << endl;
 					//cout << "new size = " << new_route.size() << endl;
@@ -673,7 +673,7 @@ bool CTwoOpt2Object::operator()(CIndividual *indv, const BProblem &prob, const i
 
 						new_dis += distance[new_route[c - 1] - 1][new_route[c] - 1];
 						new_load += n[new_route[c] - 1].demand;
-						new_value +=  m * ((FCR_full_ - FCR_empty_) * new_load / prob.capacity())*new_dis;
+						new_value +=  m * ((FCR_full_ - FCR_empty_) * new_load / prob.maxload())*new_dis;
 					}
 					new_dis += distance[routes[tail] - 1][new_route[tail - head - 1] - 1];
 					new_value += m * FCR_empty_ * new_dis;
@@ -858,12 +858,12 @@ bool CAllPointOpt::operator()(CIndividual *indv, const BProblem &prob,const int 
 
 					double total_dis = distance[prob.depot() - 1][routes[left_depot + 1] - 1],
 						   now_load = n[routes[left_depot + 1] - 1].demand,
-						   total_value = m * ((FCR_full_ - FCR_empty_) * now_load / prob.capacity())*total_dis;
+						   total_value = m * ((FCR_full_ - FCR_empty_) * now_load / prob.maxload())*total_dis;
 					for (size_t h = left_depot + 2; h < right_depot; h++)
 					{
 						total_dis += distance[routes[h - 1] - 1][routes[h] - 1];
 						now_load += n[routes[j] - 1].demand;
-						total_value += m * ((FCR_full_ - FCR_empty_) * now_load / prob.capacity()) * total_dis;
+						total_value += m * ((FCR_full_ - FCR_empty_) * now_load / prob.maxload()) * total_dis;
 					}
 					total_dis += distance[prob.depot() - 1][routes[right_depot-1] - 1];
 					total_value += m * FCR_empty_ * total_dis;
@@ -958,7 +958,7 @@ bool COnePointOptGlobal::operator()(CIndividual *indv, const BProblem &prob) con
 			right_depot++;
 		}
 		//cout << "load = " << load << endl;
-		if (load + n[routes[rand_num]-1].demand > prob.capacity()) { //這條路線不能多載這個貨物就不用算了
+		if (load + n[routes[rand_num]-1].demand > prob.maxload()) { //這條路線不能多載這個貨物就不用算了
 			//cout << "continue" << endl;
 			continue;
 		}
@@ -1152,7 +1152,7 @@ bool COnePointRelocation::operator()(CIndividual *indv, const BProblem &prob) co
 			right_depot++;
 		}
 		//cout << "load = " << load << endl;
-		if (load + n[routes[rand_num] - 1].demand > prob.capacity()) { //這條路線不能多載這個貨物就不用算了
+		if (load + n[routes[rand_num] - 1].demand > prob.maxload()) { //這條路線不能多載這個貨物就不用算了
 																	   //cout << "continue" << endl;
 			continue;
 		}

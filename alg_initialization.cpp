@@ -23,8 +23,8 @@ CRandomInitialization RandomInitialization;
 	CIndividual::TDecVec &x = indv->vars();
 	const vector<Node> & n= prob.node();
 	//x.resize(prob.num_variables());
-	//cout << "prob dimension = " <<  prob.dimension() << endl;
-	x.resize(prob.dimension()+1);
+	//cout << "prob num_node = " <<  prob.num_node() << endl;
+	x.resize(prob.num_node()+1);
 	int load = 0;
     //cout << "depot = " << prob.depot() << endl;
     x[0] = prob.depot();
@@ -65,7 +65,7 @@ CRandomInitialization RandomInitialization;
 	x[x.size()-1] = prob.depot(); //set depot tail
 
 	/*cout << "x demand = ";
-	for(int i=0;i<prob.dimension();i++)
+	for(int i=0;i<prob.num_node();i++)
     {
         cout << prob.node()[i].demand << " ";
     }
@@ -119,7 +119,7 @@ CRandomInitialization RandomInitialization;
 //        noload.resize(prob.num_vehicles());
 //
 //
-//        for(size_t customer=0; customer<prob.dimension(); customer++)
+//        for(size_t customer=0; customer<prob.num_node(); customer++)
 //        {
 //            //cout << "customer = " << customer << endl;
 //            if(customer==prob.depot()-1)
@@ -215,7 +215,7 @@ CRandomInitialization RandomInitialization;
 void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &prob) const
 {
 	CIndividual::TDecVec &x = indv->vars();
-	x.resize(prob.dimension());
+	x.resize(prob.num_node());
 
 	for (size_t i = 0; i < x.size(); i += 1)
 	{
@@ -232,53 +232,9 @@ void CRandomInitialization::block_initial(CIndividual *indv, const BProblem &pro
 	CIndividual::TDecVec &x = indv->vars();
 	const vector<Node> & n = prob.node();
 
-	x.resize(prob.dimension());
+	x.resize(prob.num_node());
 	x[0] = prob.depot();
 
-	//把點分成4象限-------------------------------------------------------------------
-	vector<int> dimen[4];
-	for (size_t i = 0; i < x.size(); i += 1)
-	{
-		if (i + 1 == prob.depot()) continue;
-		if (n[i].x-n[prob.depot()].x >= 0 && n[i].y- n[prob.depot()].y > 0)
-		{
-			dimen[0].push_back(i + 1);
-		}
-		else if (n[i].x- n[prob.depot()].x < 0 && n[i].y - n[prob.depot()].y >= 0)
-		{
-			dimen[1].push_back(i + 1);
-		}
-		else if (n[i].x- n[prob.depot()].x <= 0 && n[i].y - n[prob.depot()].y < 0)
-		{
-			dimen[2].push_back(i + 1);
-		}
-		else
-		{
-			dimen[3].push_back(i + 1);
-		}
-	}
-	//-------------------------------------------------------------------
-	//把各象限集合--------------------------------------------------------
-	size_t x_num = 1;
-	for (size_t i = 0; i < 4; i++)
-	{
-		for (size_t j = 0; j < dimen[i].size();j++)
-		{
-			x[x_num] = dimen[i][j];
-			x_num++;
-		}
-	}
-	//-------------------------------------------------------------------
-	//各象限shuffle-------------------------------------------------------------------
-	for (size_t i = 0; i < 4; i++)
-	{
-		if (i == 0) random_shuffle(x.begin()+1, x.begin()+ 1 +dimen[0].size());
-		else random_shuffle(x.begin() + dimen[i - 1].size()+1, x.begin() + dimen[i - 1].size() + dimen[i].size()+1);
-	}
-	//-------------------------------------------------------------------
-	//random_shuffle(x.begin()+1, x.end());
-
-	//swap(x[0], *find(x.begin(), x.end(), prob.depot()));
 }
 
 //---------------------------------------------------------------------------------
@@ -287,10 +243,9 @@ void CRandomInitialization::block_initial2(CIndividual *indv, const BProblem &pr
 {
 	CIndividual::TDecVec &x = indv->vars();
 	const vector<Node> & n = prob.node();
-	const vector <vector<int>> & dimen = prob.dimen();
 	x = prob.ori_route();
 
-	//x.resize(prob.dimension());
+	//x.resize(prob.num_node());
 	//x[0] = prob.depot();
 
 	////把點分8象限--------------------------------------------------------------------------
@@ -343,13 +298,13 @@ void CRandomInitialization::block_initial2(CIndividual *indv, const BProblem &pr
 
 	//把各象限shuffle-------------------------------------------------------------
 	//MyTimers.GetTimer("shuffle")->start();
-	size_t shuffle_size = 0;
+	/*size_t shuffle_size = 0;
 	for (size_t i = 0; i < prob.num_dimen(); i++)
 	{
 		if (i == 0) random_shuffle(x.begin() + 1, x.begin() + dimen[0].size() + 1);
 		else random_shuffle(x.begin() + shuffle_size + 1, x.begin() + shuffle_size + dimen[i].size() + 1);
 		shuffle_size += dimen[i].size();
-	}
+	}*/
 	//MyTimers.GetTimer("shuffle")->end();
 }
 

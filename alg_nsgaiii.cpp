@@ -39,10 +39,10 @@ void CNSGAIII::Setup(ifstream &ifile)
 	if (!ifile) return;
 
 	string dummy;
-	ifile >> dummy >> dummy >> name_;
+	ifile >> dummy >> dummy >> name_; //algorithm.name(dummy) =(dummy) NSGAIII (name_)
 
 	size_t p1 = 0, p2 = 0;
-	//ifile >> dummy >> dummy >> p1 >> p2;
+	//ifile >> dummy >> dummy >> p1 >> p2; 
     ifile >> dummy >> dummy >> p1 ;
 	obj_division_p_.push_back(p1);
 

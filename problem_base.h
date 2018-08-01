@@ -12,9 +12,10 @@ using namespace std;
 // ----------------------------------------------------------------------
 class CIndividual;
 struct Node
-    {
-        double x,y,demand;
-    };
+{
+	string name;
+    int number,demand,ready_time,due_time,service_time;
+};
 
 class BProblem
 {
@@ -31,40 +32,24 @@ public:
 
 	const std::vector<Node> & node() const {return node_;}
 	const std::vector<vector<double>> & dis() const { return distance_; }
-	const std::vector<vector<int>> & dimen()const { return dimen_; }
 	const std::vector<int> & ori_route() const { return ori_route_; }
 	void PrintNode() const {cout << node_.size();}
 
 	const std::string & name() const { return name_; }
-	const std::vector<double> & lower_bounds() const { return lbs_; }
-	const std::vector<double> & upper_bounds() const { return ubs_; }
 	const std::size_t depot()const {return depot_section_;}
-	const std::size_t capacity() const {return capacity_;}
+	const std::size_t maxload() const {return maxload_;}
 	const std::size_t num_vehicles() const {return num_vehicles_;}
-	const std::size_t dimension() const {return dimension_;}
-	const std::size_t num_dimen() const { return num_dimen_; }
-	
-    //std::ostream & operator << (std::ostream &os, const Node &node);
-	//ostream & operator <<(ostream & os ,const Node& node)
-	/*std::ostream & operator << (std::ostream &os, const Node &node)
-	{
-	    std::cout <<" x = " << node[0].x << endl;
-	    std::cout << "y = " << node[0].y << endl;
-	    std::cout << "demand = " << node[0].demand << endl;
-	    return os;
-	}*/
+	const std::size_t lowest_speed() const { return lowest_speed_; }
+	const std::size_t highest_speed() const { return highest_speed_; }
+	const std::size_t num_node() const { return num_node_; }
 
 protected:
 	std::string name_;
     std::vector<Node> node_;
 	std::vector<vector<double>> distance_;
-	std::vector<vector<int>>dimen_;
 	std::vector<int> ori_route_;
-	std::size_t depot_section_, capacity_, dimension_ ,num_vehicles_,num_dimen_;
-	//int num_vehicles_;
+	std::size_t depot_section_, curb_weight_,maxload_, dimension_ ,num_vehicles_,num_customers_,lowest_speed_,highest_speed_,num_node_;
 	double feasible_dis_;
-	std::vector<double> lbs_, // lower bounds of variables
-		                ubs_; // upper bounds of variables
 };
 
 #endif

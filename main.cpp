@@ -38,14 +38,14 @@ public:
 int main()
 {
 	ifstream exp_list("explist.ini");
-	if (!exp_list) { cout << "We need the explist.ini file." << endl; return 1; }
+	if (!exp_list) { cout << "We need the explist.ini file." << endl; getchar(); return 1; }
 
 	string exp_name;
 	while (exp_list >> exp_name)
 	{
 	    cout << "exp_name = " << exp_name << endl;
-		ifstream exp_ini("Experiments\\" + exp_name);
-		if (!exp_ini) { cout << exp_name << " file does not exist." << endl; continue; }
+		ifstream exp_ini("Experiments\\" + exp_name); //exp_name = xxx.ini
+		if (!exp_ini) { cout << exp_name << " file does not exist." << endl; getchar();  continue; }
 		// ----- Setup the expriment ------
 		cout << "Setup the expirement" << endl;
 		CNSGAIII nsgaiii;
@@ -53,11 +53,12 @@ int main()
 		set<Point_set> ps;
 
 		SetupExperiment(nsgaiii, &problem, exp_ini);
+		cout << "---- Setup finish ----" << endl; getchar();
 		Gnuplot gplot;
 		ofstream IGD_results(nsgaiii.name() + "-" + problem->name() + "-IGD.txt"); // output file for IGD values per run
 
 		// ----- Run the algorithm to solve the designated function -----
-		const size_t NumRuns = 10; // 20 is the setting in NSGA-III paper
+		const size_t NumRuns = 20; // 20 is the setting in NSGA-III paper
 		for (size_t r=0; r<NumRuns; r+=1)
 		/*bool set_check = false;
 		const size_t set_num = 1000000;
@@ -65,7 +66,7 @@ int main()
 		while(!set_check)*/
 		{
 			//r++; //wu cnt 
-			srand(r); //cout << "Solving " << problem->name() << " ... Run: " << r << endl;
+			srand(r); cout << "Solving " << problem->name() << " ... Run: " << r << endl;
 			// --- Write number of runs to problem.txt
 			fstream file;
 			string file_name = problem->name() + ".txt";
