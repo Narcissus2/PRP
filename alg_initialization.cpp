@@ -232,7 +232,7 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 	
 	swap(x[0], *find(x.begin(), x.end(), prob.depot()));
 
-	cout << "Permutate : " << endl;
+	/*cout << "Permutate : " << endl;
 
 	for (int i = 0; i < x.size(); i++)
 	{
@@ -240,11 +240,11 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 	}
 	cout << endl;
 	cout << "random_permutate finish ---" << endl;
-	cout << "Please Enter to continue..." << endl; getchar();
+	cout << "Please Enter to continue..." << endl; getchar();*/
 
 	// ----- input depot consider the capacity -----
 	int capacity = 0;
-	cout << "max load = " << prob.maxload() << endl;
+	//cout << "max load = " << prob.maxload() << endl;
 	for (int i = 0; i < x.size(); i++)
 	{
 		if (x[i] == prob.depot())
@@ -263,17 +263,17 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 		{
 			capacity += node[x[i]].demand;
 		}
-		cout << "capacity = " << capacity << endl;
+		//cout << "capacity = " << capacity << endl;
 	}
 	x.push_back(prob.depot());
-	cout << "Permutate After insert(capacity): " << endl;
+	/*cout << "Permutate After insert(capacity): " << endl;
 	for (int i = 0; i < x.size(); i++)
 	{
 		cout << x[i] << " ";
 	}
 	cout << endl;
 	cout << "insert finish ---" << endl;
-	cout << "Please Enter to continue..." << endl; getchar();
+	cout << "Please Enter to continue..." << endl; getchar();*/
 
 	// ----- insert depot consider the time window -----
 	int time = 0;
@@ -287,14 +287,14 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 			x.insert(it + i+1, prob.depot());
 		}
 	}
-	cout << "Permutate After insert(time window): " << endl;
+	/*cout << "Permutate After insert(time window): " << endl;
 	for (int i = 0; i < x.size(); i++)
 	{
 		cout << x[i] << " ";
 	}
 	cout << endl;
 	cout << "insert finish ---" << endl;
-	cout << "Please Enter to continue..." << endl; getchar();
+	cout << "Please Enter to continue..." << endl; getchar();*/
 
 	// ----- set up the initial speed -----
 	CIndividual::TObjVec & speed = indv->speed();
@@ -343,4 +343,5 @@ void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) c
 		//cout << "sol = " << (*pop)[i].objs()[0] << endl;
 		
     }
+	//cout << "Initial OK" << endl; getchar();
 }

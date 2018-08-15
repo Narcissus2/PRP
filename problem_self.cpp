@@ -70,7 +70,7 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 
 	//feasible_dis_ = 5e3; //還不確定
 	cout << "Problem set ------- OK" << endl;
-	cout << "Please Enter to continue..." << endl;  getchar();
+	//cout << "Please Enter to continue..." << endl;  getchar();
 
 }
 // -----------------------------------------------------------
@@ -556,7 +556,9 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 	//cout << "\nEva :\n";
 	for (size_t i = 0; i<x.size(); i++)
 	{
+		//cout << "x[i] = " << x[i] << endl;
 		if (x[i] == depot()) {
+			//cout << "1" << endl;
 			load_check = 0;
 			if (continous_depot)
 			{
@@ -571,6 +573,7 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 		}
 		else if (check_gene[x[i]])
 		{
+			//cout << "2" << endl;
 			f[0] = infeasible_value;
 			f[1] = infeasible_value;
 			cout << "same customers Invalid !" << endl;
@@ -579,7 +582,8 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 		}
 		else
 		{
-			load_check += node_[routes[i] - 1].demand;
+			//cout << "3" << endl;
+			load_check += node_[x[i]].demand;
 			//cout << "load = " << load_check << endl;
 			if (load_check > maxload_)
 			{
@@ -593,7 +597,7 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 			continous_depot = false;
 		}
 	}
-
+	//cout << "EVA 2" << endl; getchar();
 	// You can define your own problem here.
 
 	//distance
@@ -647,6 +651,7 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 
 		會被變動的就是 d(距離) v(速度) f(載重)
 	*************************************************************************/
+	//cout << "Obj1" << endl; getchar();
 	for (size_t i = 1; i<x.size(); i++)
 	{
 		double obj1 = 0.0, obj2 = 0.0, obj3 = 0.0, obj4 = 0.0;
@@ -674,6 +679,7 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 		sj = cj + tj + dj0/vr
 		簡單來說就是所有時間都要算進去 = 回倉庫時間 - 倉庫出發時間 
 	*************************************************************************/
+	//cout << "Obj 2" << endl; getchar();
 	size_t next_index = 0, now_index = 0;
 	for (size_t i = 0; i<x.size(); i++)
 	{

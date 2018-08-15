@@ -120,7 +120,13 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			cnt++;
 		}*/
 		//MyTimers.GetTimer("DPEvaluate")->start();
-		if (problem.Dp2Object(&pop[cur][i],100))//100代表100%用距離切0%用emission切
+		//cout << "OK let's eva" << endl; getchar();
+		//if (problem.Dp2Object(&pop[cur][i],100))//100代表100%用距離切0%用emission切
+		//{
+		//	cnt++;
+		//	total_evaluate++;
+		//}
+		if (problem.EvaluateOldEncoding(&pop[cur][i]))//pure evaluate
 		{
 			cnt++;
 			total_evaluate++;
@@ -128,7 +134,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 		//MyTimers.GetTimer("DPEvaluate")->end();
 		
 	}
-	//cout <<"Initial pop feasible% = " <<  (cnt / PopSize)*100  << '%' << endl;
+	cout << "Initial pop feasible% = " << (cnt / PopSize) * 100 << '%' << endl; getchar();
 
 	double G_Min_dis = pop[cur][0].objs()[0];
 	for (size_t t=0; t<gen_num_; t+=1)
