@@ -214,105 +214,102 @@ CRandomInitialization RandomInitialization;
 
 void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &prob) const
 {
+	/*
+		隨機排序後依據車子載重和time window 去塞倉庫
+	*/
 	CIndividual::TDecVec &x = indv->vars();
+	const vector<Node> & node = prob.node();
+	const vector<vector<double>> &distance = prob.dis();
 	x.resize(prob.num_node());
-
 	for (size_t i = 0; i < x.size(); i += 1)
 	{
-		x[i] = i + 1;
+		x[i] = i;
 	}
 
 	random_shuffle(x.begin(), x.end());
-
+	/*cout << "shuffle ---" << endl;
+	cout << "Please Enter to continue..." << endl; getchar();*/
+	
 	swap(x[0], *find(x.begin(), x.end(), prob.depot()));
+
+	cout << "Permutate : " << endl;
+
+	for (int i = 0; i < x.size(); i++)
+	{
+		cout << x[i] << " ";
+	}
+	cout << endl;
+	cout << "random_permutate finish ---" << endl;
+	cout << "Please Enter to continue..." << endl; getchar();
+
+	// ----- input depot consider the capacity -----
+	int capacity = 0;
+	cout << "max load = " << prob.maxload() << endl;
+	for (int i = 0; i < x.size(); i++)
+	{
+		if (x[i] == prob.depot())
+		{
+			capacity = 0;
+		}
+
+		if (capacity + node[x[i]].demand > prob.maxload())
+		{
+			std::vector<CIndividual::TGene>::iterator it;
+			it = x.begin();
+			x.insert(it+i, prob.depot());
+			capacity = 0;
+		}
+		else
+		{
+			capacity += node[x[i]].demand;
+		}
+		cout << "capacity = " << capacity << endl;
+	}
+	x.push_back(prob.depot());
+	cout << "Permutate After insert(capacity): " << endl;
+	for (int i = 0; i < x.size(); i++)
+	{
+		cout << x[i] << " ";
+	}
+	cout << endl;
+	cout << "insert finish ---" << endl;
+	cout << "Please Enter to continue..." << endl; getchar();
+
+	// ----- insert depot consider the time window -----
+	int time = 0;
+	for (int i = 0; i < x.size()-1; i++)
+	{
+		if (node[x[i]].ready_time + node[x[i]].service_time + distance[x[i]][x[i + 1]] / prob.avg_speed()>node[x[i + 1]].due_time)
+		{
+			cout << "i and i+1 : " << i << " " << i + 1 << endl;
+			std::vector<CIndividual::TGene>::iterator it;
+			it = x.begin();
+			x.insert(it + i+1, prob.depot());
+		}
+	}
+	cout << "Permutate After insert(time window): " << endl;
+	for (int i = 0; i < x.size(); i++)
+	{
+		cout << x[i] << " ";
+	}
+	cout << endl;
+	cout << "insert finish ---" << endl;
+	cout << "Please Enter to continue..." << endl; getchar();
+
+	// ----- set up the initial speed -----
+	CIndividual::TObjVec & speed = indv->speed();
+	speed.resize(x.size());
+	for (int i = 0; i < x.size()-1; i++)
+	{
+		speed[i] = prob.avg_speed();
+	}
+	speed[x.size() - 1] = 0;
 }
 //---------------------------------------------------------------------------
-void CRandomInitialization::block_initial(CIndividual *indv, const BProblem &prob) const
-{
-	CIndividual::TDecVec &x = indv->vars();
-	const vector<Node> & n = prob.node();
-
-	x.resize(prob.num_node());
-	x[0] = prob.depot();
-
-}
-
-//---------------------------------------------------------------------------------
-
-void CRandomInitialization::block_initial2(CIndividual *indv, const BProblem &prob) const
-{
-	CIndividual::TDecVec &x = indv->vars();
-	const vector<Node> & n = prob.node();
-	x = prob.ori_route();
-
-	//x.resize(prob.num_node());
-	//x[0] = prob.depot();
-
-	////把點分8象限--------------------------------------------------------------------------
-	//vector<int> dimen[8];
-	//const size_t dimen_num = 8;
-	//for (size_t i = 0; i < x.size(); i += 1)
-	//{
-	//	if (i + 1 == prob.depot()) continue;
-	//	if (n[i].x - n[prob.depot()-1].x >= 0 && n[i].y - n[prob.depot()-1].y > 0)
-	//	{
-	//		if((n[i].x - n[prob.depot()-1].x)!=0 && ((n[i].y - n[prob.depot()-1].y)/ (n[i].x - n[prob.depot()-1].x))<=1)
-	//			dimen[0].push_back(i + 1);
-	//		else 
-	//			dimen[1].push_back(i + 1);
-	//	}
-	//	else if (n[i].x - n[prob.depot()-1].x < 0 && n[i].y - n[prob.depot()-1].y >= 0)
-	//	{
-	//		if (((n[i].y - n[prob.depot()-1].y) / (n[i].x - n[prob.depot()-1].x)) <= -1)
-	//			dimen[2].push_back(i + 1);
-	//		else
-	//			dimen[3].push_back(i + 1);
-	//	}
-	//	else if ((n[i].x - n[prob.depot()-1].x) <= 0 && (n[i].y - n[prob.depot()-1].y) < 0)
-	//	{
-	//		if ((n[i].x - n[prob.depot()-1].x) != 0 && ((n[i].y - n[prob.depot()-1].y) / (n[i].x - n[prob.depot()-1].x)) <= 1)
-	//			dimen[4].push_back(i + 1);
-	//		else
-	//			dimen[5].push_back(i + 1);
-	//	}
-	//	else
-	//	{
-	//		if (((n[i].y - n[prob.depot()-1].y) / (n[i].x - n[prob.depot()-1].x)) <= -1)
-	//			dimen[6].push_back(i + 1);
-	//		else
-	//			dimen[7].push_back(i + 1);
-	//	}
-	//}
-	////---------------------------------------------------------------------
-	////分完的8象限再結合起來-------------------------------------------------------
-	//size_t x_num = 1;
-	//for (size_t i = 0; i < dimen_num; i++)
-	//{
-	//	for (size_t j = 0; j < dimen[i].size(); j++)
-	//	{
-	//		x[x_num] = dimen[i][j];
-	//		x_num++;
-	//	}
-	//}
-	//---------------------------------------------------------------------
-
-	//把各象限shuffle-------------------------------------------------------------
-	//MyTimers.GetTimer("shuffle")->start();
-	/*size_t shuffle_size = 0;
-	for (size_t i = 0; i < prob.num_dimen(); i++)
-	{
-		if (i == 0) random_shuffle(x.begin() + 1, x.begin() + dimen[0].size() + 1);
-		else random_shuffle(x.begin() + shuffle_size + 1, x.begin() + shuffle_size + dimen[i].size() + 1);
-		shuffle_size += dimen[i].size();
-	}*/
-	//MyTimers.GetTimer("shuffle")->end();
-}
-
-//---------------------------------------------------------------------------------
 
 void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) const
 {
-    //cout << "pop size = " << pop->size() << endl;
+    cout << "pop size = " << pop->size() << endl;
     const size_t n_random_num = 0;
     for (size_t i=0; i<pop->size(); i+=1)
     {
@@ -341,8 +338,8 @@ void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) c
 			}
 		}*/
 		//-------------------------------------------------------
-
-		this->block_initial2(&(*pop)[i], prob);
+		this->random_permutate(&(*pop)[i], prob);
+		//this->block_initial2(&(*pop)[i], prob); //GVRP
 		//cout << "sol = " << (*pop)[i].objs()[0] << endl;
 		
     }

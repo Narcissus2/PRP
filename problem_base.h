@@ -41,6 +41,7 @@ public:
 	const std::size_t num_vehicles() const {return num_vehicles_;}
 	const std::size_t lowest_speed() const { return lowest_speed_; }
 	const std::size_t highest_speed() const { return highest_speed_; }
+	const double avg_speed()const { return ((double)lowest_speed_ + (double)highest_speed_) / 2; }
 	const std::size_t num_node() const { return num_node_; }
 
 protected:

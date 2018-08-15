@@ -55,21 +55,22 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 		ifile >> tmp_node.number >> tmp_node.name >> tmp_node.demand >> tmp_node.ready_time >> tmp_node.due_time >> tmp_node.service_time;
 		if (tmp_node.service_time == 0)
 		{
+			//cout << "depot = " << depot_section_ << endl;
 			depot_section_ = tmp_node.number;
 		}
 		node_.push_back(tmp_node);
 	}
-
-	for (int i = 0; i < num_node_; i++)
+	// ----- output the map information -----
+	/*for (int i = 0; i < num_node_; i++)
 	{
 		cout << node_[i].number << " " << node_[i].name << " " << node_[i].demand << " " << node_[i].ready_time << " " << node_[i].due_time << " " << node_[i].service_time << endl;
-	}
+	}*/
 
 	//num_vars_ = num_node_; //我不知道這有什麼意思..
 
 	//feasible_dis_ = 5e3; //還不確定
 	cout << "Problem set ------- OK" << endl;
-	getchar();
+	cout << "Please Enter to continue..." << endl;  getchar();
 
 }
 // -----------------------------------------------------------
@@ -542,38 +543,38 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 {
 	const CIndividual::TDecVec &routes = indv->routes();
+	const CIndividual::TDecVec &x = indv->vars();
+	const CIndividual::TObjVec &speed = indv->speed();
 	CIndividual::TObjVec &f = indv->objs();
 	const double infeasible_value = 1e8;
 
 	// --- Check if solution is valid.
 	vector <bool> check_gene;
-	check_gene.resize(routes.size(), false);
+	check_gene.resize(x.size(), false);
 	bool continous_depot = false;
 	double load_check = 0.0;
 	//cout << "\nEva :\n";
-	for (size_t i = 0; i<routes.size(); i++)
+	for (size_t i = 0; i<x.size(); i++)
 	{
-		//cout << routes[i] << ' ';
-		if (routes[i] == depot()) {
+		if (x[i] == depot()) {
 			load_check = 0;
 			if (continous_depot)
 			{
 				f[0] = infeasible_value;
 				f[1] = infeasible_value;
-				cout << "routes = " << routes[i - 1] << ' ' << routes[i] << endl;
+				cout << "routes = " << x[i - 1] << ' ' << x[i] << endl;
 				cout << "continous Invalid !" << endl;
-				system("pause");
+				cout << "Please Enter to continue ... " << endl; getchar();
 				return false;
 			}
 			continous_depot = true;
 		}
-		else if (check_gene[routes[i]])
+		else if (check_gene[x[i]])
 		{
 			f[0] = infeasible_value;
 			f[1] = infeasible_value;
-			//cout << "rout i = " << routes[i] << endl;
 			cout << "same customers Invalid !" << endl;
-			getchar();
+			cout << "Please Enter to continue ... " << endl; getchar();
 			return false;
 		}
 		else
@@ -585,10 +586,10 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 				f[0] = infeasible_value;
 				f[1] = infeasible_value;
 				cout << "load Invalid !" << endl;
-				getchar();
+				cout << "Please Enter to continue ... " << endl; getchar();
 				return false;
 			}
-			check_gene[routes[i]] = true;
+			check_gene[x[i]] = true;
 			continous_depot = false;
 		}
 	}
@@ -597,30 +598,68 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 
 	//distance
 	double next_posx, next_posy,
-		now_pos = depot_section_ - 1, next_pos;
+		now_pos = depot_section_, next_pos; //現在不是從1開始，都是從0開始(depot_section)
 
 	bool cycle = false;
 
-	vector <double> v_dis;
-	double dis;
+	vector <double> v_dis; //用在object 2 (每段距離)
+	double dis,dis_from_depot = 0.0;
 
-	/*cout << "now dis = " << f[0] << endl;
-	cout << "indv v = " << indv->num_vehicles() << endl;
-	cout << "this v = " << this->num_vehicles() << endl;
-	cout << "max XXX = " << max(indv->num_vehicles() - this->num_vehicles(), static_cast<size_t>(0)) << endl;
-	cout << "static cast = " << static_cast<size_t>(0) << endl;
-	cout << "-- = " << (int)indv->num_vehicles() - (int)this->num_vehicles() << endl;*/
-	int limit_vehicles = (int)indv->num_vehicles() - (int)this->num_vehicles();
+	//int limit_vehicles = (int)indv->num_vehicles() - (int)this->num_vehicles(); //現在沒有車輛限制
 	//f[0] = max((int)indv->num_vehicles() - (int)this->num_vehicles(), static_cast<size_t>(0))*5e3;
-	f[0] = max(limit_vehicles, static_cast<int>(0))*5e3;
+	//f[0] = max(limit_vehicles, static_cast<int>(0))*5e3; //現在沒有車輛限制
 
-	//object 1 (distance) : total distance
-	for (size_t i = 1; i<routes.size(); i++)
+
+	// ----- object 1 (distance) : total fuel -----
+	/*************************************************************************
+		Objective 1-1 
+		L當成lamda 
+		總合kNVLd x 總合z/v 
+		k = 0.2(引擎磨擦係數), N = 33(引擎轉速)(轉/秒),V = 5(發動機排量)
+		L = 1/44x737 = 0.00003083
+		d(距離)，總合z/v = 1/速度
+		==> kNVL= 0.2 x 33 x 5 x 0.00003083 = 0.00101739 
+		==> 0.00101739 * d * 1/速度
+
+		Objective 1-2
+		總合wrLadx
+		r = gama = 1/(1000 x 0.4 x 0.9) = 0.0027778
+		w = 本身車重 = 6350 kg
+		L = 0.00003083
+		a = 0 + 0 + 9.81 x 0.01 x 1 = 0.0981
+		x = 要不要走ij
+		d(距離)
+		==> 0.0027778 x 6350 x 0.00003083 x 0.0981 x d
+		==> 0.000053348 x d 
+
+		Objective 1-3
+		就是把1-2 換成載重
+		==> 0.0027778 x f x 0.00003083 x 0.0981 x d 
+		==> 0.00000008401 * f * d
+
+		Objective 1-4
+		總合BrLd總合z/v^2
+		B = 0.5 x 0.7 x 1.2041 x 3.912 = 1.64865372
+		r = 0.0027778 
+		L = 0.00003083
+		==> 1.64865372 x 0.0027778 x 0.00003083 x d x 1/v^2
+		==> 0.00000014119 *d/v^2
+
+		會被變動的就是 d(距離) v(速度) f(載重)
+	*************************************************************************/
+	for (size_t i = 1; i<x.size(); i++)
 	{
-		next_pos = routes[i] - 1;
+		double obj1 = 0.0, obj2 = 0.0, obj3 = 0.0, obj4 = 0.0;
+		next_pos = x[i];
 		dis = distance_[now_pos][next_pos];
-		v_dis.push_back(dis);
-		f[0] += dis;
+		obj1 = 0.00101739 * dis / speed[i];
+		obj2 = 0.000053348 * dis;
+		obj3 = 0.00000008401 * dis_from_depot * node_[next_pos].demand; // 0-1 載的重量是1，所以是node_[next_pos].demand
+		obj4 = 0.00000014119 *dis / (speed[i] * speed[i]);
+		dis_from_depot += dis;
+
+		//v_dis.push_back(dis);
+		f[0] += obj1+obj2+obj3+obj4;
 
 		now_pos = next_pos;
 	}
@@ -629,52 +668,40 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 	//getchar();
 	//f[0] = x[0];
 
-	///object 2 (Co2 Emission): load * distance
-	/*
-	CO2 emission = m x fuel consumption
-	fuel consumption = (a x 10^-3 x load + b ) x distance
-	m = 2.68 (油耗=>CO2的係數)
-	a = 6.208 x 10^-3
-	b = 0.2125  (空車重)
-	*/
-	//f[1] = max(indv->num_vehicles() - this->num_vehicles(), static_cast<size_t>(0))*1e5;
-	f[1] = max(limit_vehicles, static_cast<int>(0))*1e5;
-	//cout << "before f[1] = " << f[1] << endl;
+	// ----- object 2 (driving time): total using time ------
+	/*************************************************************************
+		minimize total sj
+		sj = cj + tj + dj0/vr
+		簡單來說就是所有時間都要算進去 = 回倉庫時間 - 倉庫出發時間 
+	*************************************************************************/
 	size_t next_index = 0, now_index = 0;
-	double load = 0;
-	for (size_t i = 0; i<routes.size(); i++)
+	for (size_t i = 0; i<x.size(); i++)
 	{
-		load += node()[routes[i] - 1].demand;
-		if (routes[i] == depot() && i != 0)
+		if (x[i] == depot() && i != 0)
 		{
 			next_index = i;
+			int wait_time = 0;
 			for (size_t j = now_index; j<next_index; j++)
 			{
-				f[1] += ((FCR_full_ - FCR_empty_) * load / maxload_ + FCR_empty_) * v_dis[j]; //[ZHANG]
-				//f[1] += (a_ * load / maxload_ + b_) * v_dis[j];//JEMEI
+				// ---- calculate waiting time
+				if (j > 0) 
+				{
+					wait_time = node_[x[i]].ready_time;
+					if (f[1] < node_[x[i]].ready_time)
+					{
+						wait_time = node_[x[i]].ready_time - f[1];
+					}
+					else wait_time = 0;
+				}
+				// ---- calculate total time
+				f[1] += wait_time + node_[x[j]].service_time + distance_[x[j]][x[j + 1]] / speed[i];
 				//cout << "emission = " << f[1] << endl;
 				//getchar();
-				load -= node()[routes[j + 1] - 1].demand;
 			}
 			now_index = next_index;
-			load = 0;
 		}
 	}
-	f[1] *= m_; // CO2 emission = m x fuel consumption
 	  		//cout << "after f[1] = " << f[1] << endl;
-				//超出車輛數的判斷
-				//cout << endl;
-				//getchar();
-	if (indv->num_vehicles() > this->num_vehicles())
-	{
-		//cout << "vehicle overload = " << indv->num_vehicles() << endl;
-		//f[0] = max(indv->num_vehicles() - this->num_vehicles(), static_cast<size_t>(0))*5e3;
-		//f[1] = max(indv->num_vehicles() - this->num_vehicles(), static_cast<size_t>(0))*1e5;
-		return false;
-	}
-	//else
-	//cout << "vehicle OK" << endl;
-
 
 	return true;
 }

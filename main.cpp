@@ -53,7 +53,7 @@ int main()
 		set<Point_set> ps;
 
 		SetupExperiment(nsgaiii, &problem, exp_ini);
-		cout << "---- Setup finish ----" << endl; getchar();
+		//cout << "---- Setup finish ----" << endl; getchar();
 		Gnuplot gplot;
 		ofstream IGD_results(nsgaiii.name() + "-" + problem->name() + "-IGD.txt"); // output file for IGD values per run
 
