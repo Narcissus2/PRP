@@ -542,23 +542,26 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 
 bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 {
+	// ----- initial setting ------
 	const CIndividual::TDecVec &routes = indv->routes();
 	const CIndividual::TDecVec &x = indv->vars();
 	const CIndividual::TObjVec &speed = indv->speed();
 	CIndividual::TObjVec &f = indv->objs();
 	const double infeasible_value = 1e8;
 
-	// --- Check if solution is valid.
+	// ----- Check if solution is valid. -----
 	vector <bool> check_gene;
 	check_gene.resize(x.size(), false);
 	bool continous_depot = false;
 	double load_check = 0.0;
+	int vehicle_num = 0;
 	//cout << "\nEva :\n";
 	for (size_t i = 0; i<x.size(); i++)
 	{
 		//cout << "x[i] = " << x[i] << endl;
 		if (x[i] == depot()) {
 			//cout << "1" << endl;
+			vehicle_num++;
 			load_check = 0;
 			if (continous_depot)
 			{
@@ -597,81 +600,160 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 			continous_depot = false;
 		}
 	}
+	// ----- set the vehicle num -----
+	indv->set_num_vehicles(vehicle_num - 1);
+
+	//cout << "vnum = " << indv->num_vehicles() << endl; getchar();
 	//cout << "EVA 2" << endl; getchar();
+
 	// You can define your own problem here.
-
-	//distance
-	double next_posx, next_posy,
-		now_pos = depot_section_, next_pos; //現在不是從1開始，都是從0開始(depot_section)
-
-	bool cycle = false;
-
-	vector <double> v_dis; //用在object 2 (每段距離)
-	double dis,dis_from_depot = 0.0;
 
 	//int limit_vehicles = (int)indv->num_vehicles() - (int)this->num_vehicles(); //現在沒有車輛限制
 	//f[0] = max((int)indv->num_vehicles() - (int)this->num_vehicles(), static_cast<size_t>(0))*5e3;
 	//f[0] = max(limit_vehicles, static_cast<int>(0))*5e3; //現在沒有車輛限制
 
-
-	// ----- object 1 (distance) : total fuel -----
+	// ----- object 1 (fuel consumed) : total fuel (version 2)-----
 	/*************************************************************************
-		Objective 1-1 
-		L當成lamda 
-		總合kNVLd x 總合z/v 
-		k = 0.2(引擎磨擦係數), N = 33(引擎轉速)(轉/秒),V = 5(發動機排量)
-		L = 1/44x737 = 0.00003083
-		d(距離)，總合z/v = 1/速度
-		==> kNVL= 0.2 x 33 x 5 x 0.00003083 = 0.00101739 
-		==> 0.00101739 * d * 1/速度
+	Objective 1-1
+	L當成lamda
+	總合kNVLd x 總合z/v
+	k = 0.2(引擎磨擦係數), N = 33(引擎轉速)(轉/秒),V = 5(發動機排量)
+	L = 1/44x737 = 0.00003083
+	d(距離)，總合z/v = 1/速度
+	==> kNVL= 0.2 x 33 x 5 x 0.00003083 = 0.00101739
+	==> 0.00101739 * d * 1/速度
 
-		Objective 1-2
-		總合wrLadx
-		r = gama = 1/(1000 x 0.4 x 0.9) = 0.0027778
-		w = 本身車重 = 6350 kg
-		L = 0.00003083
-		a = 0 + 0 + 9.81 x 0.01 x 1 = 0.0981
-		x = 要不要走ij
-		d(距離)
-		==> 0.0027778 x 6350 x 0.00003083 x 0.0981 x d
-		==> 0.000053348 x d 
+	Objective 1-2
+	總合wrLadx
+	r = gama = 1/(1000 x 0.4 x 0.9) = 0.0027778
+	w = 本身車重 = 6350 kg
+	L = 0.00003083
+	a = 0 + 0 + 9.81 x 0.01 x 1 = 0.0981
+	x = 要不要走ij
+	d(距離)
+	==> 0.0027778 x 6350 x 0.00003083 x 0.0981 x d
+	==> 0.000053348 x d
 
-		Objective 1-3
-		就是把1-2 換成載重
-		==> 0.0027778 x f x 0.00003083 x 0.0981 x d 
-		==> 0.00000008401 * f * d
+	Objective 1-3
+	就是把1-2 換成載重
+	==> 0.0027778 x f x 0.00003083 x 0.0981 x d
+	==> 0.00000008401 * f * d
 
-		Objective 1-4
-		總合BrLd總合z/v^2
-		B = 0.5 x 0.7 x 1.2041 x 3.912 = 1.64865372
-		r = 0.0027778 
-		L = 0.00003083
-		==> 1.64865372 x 0.0027778 x 0.00003083 x d x 1/v^2
-		==> 0.00000014119 *d/v^2
+	Objective 1-4
+	總合BrLd總合z/v^2
+	B = 0.5 x 0.7 x 1.2041 x 3.912 = 1.64865372
+	r = 0.0027778
+	L = 0.00003083
+	==> 1.64865372 x 0.0027778 x 0.00003083 x d x 1/v^2
+	==> 0.00000014119 *d/v^2
 
-		會被變動的就是 d(距離) v(速度) f(載重)
+	會被變動的就是 d(距離) v(速度) f(載重)
+	其中也會紀錄下total distance
 	*************************************************************************/
-	//cout << "Obj1" << endl; getchar();
-	for (size_t i = 1; i<x.size(); i++)
-	{
-		double obj1 = 0.0, obj2 = 0.0, obj3 = 0.0, obj4 = 0.0;
-		next_pos = x[i];
-		dis = distance_[now_pos][next_pos];
-		obj1 = 0.00101739 * dis / speed[i];
-		obj2 = 0.000053348 * dis;
-		obj3 = 0.00000008401 * dis_from_depot * node_[next_pos].demand; // 0-1 載的重量是1，所以是node_[next_pos].demand
-		obj4 = 0.00000014119 *dis / (speed[i] * speed[i]);
-		dis_from_depot += dis;
+	
+	//cout << "Obj1 version 1" << endl; getchar();
+	//double next_posx, next_posy,
+	//	now_pos = depot_section_, next_pos; //現在不是從1開始，都是從0開始(depot_section)
+	////vector <double> v_dis; //用在object 2 (每段距離)
+	//double dis_from_depot = 0.0, total_distance = 0.0;
 
-		//v_dis.push_back(dis);
-		f[0] += obj1+obj2+obj3+obj4;
-
-		now_pos = next_pos;
-	}
+	//for (size_t i = 1; i<x.size(); i++)
+	//{
+	//	double obj1 = 0.0, obj2 = 0.0, obj3 = 0.0, obj4 = 0.0;
+	//	next_pos = x[i];
+	//	double dis = distance_[now_pos][next_pos];
+	//	obj1 = 0.00101739 * dis / speed[i];
+	//	obj2 = 0.000053348 * dis;
+	//	obj3 = 0.00000008401 * dis_from_depot * node_[next_pos].demand; // 0-1 載的重量是1，所以是node_[next_pos].demand
+	//	obj4 = 0.00000014119 *dis / (speed[i] * speed[i]);
+	//	dis_from_depot += dis;
+	//	cout << "dis from depot = " << dis_from_depot << endl;
+	//	//v_dis.push_back(dis);
+	//	f[0] += obj1+obj2+obj3+obj4;
+	//	/*cout << "obj1 = " << obj1 << endl;
+	//	cout << "obj2 = " << obj2 << endl;
+	//	cout << "obj3 = " << obj3 << endl;
+	//	cout << "obj4 = " << obj4 << endl;*/
+ //		//printf("dis[%.lf][%.lf]\n", now_pos, next_pos);
+	//	//cout << "f0 - " << i << " = " << f[0] << endl;
+	//	now_pos = next_pos;
+	//}
+	//indv->set_total_dis(dis_from_depot);
+	//cout << "total dis = " << dis_from_depot << endl; getchar();
 	//cout << "car = " << indv->num_vehicles() << endl;
-	//cout << "total distance = " << f[0] << endl;
+	//cout << "total fuel = " << f[0] << endl;
 	//getchar();
 	//f[0] = x[0];
+
+	// ----- object 1 (fuel consumed) : total fuel (version 1)-----
+	/*************************************************************************
+	Objective 1 原始公式如下:
+	F(v,M) = lamda(kNV + wrav + rafv + Brv^3)d/v
+	需要代入的只有v和M也就是速度和重量
+	M = w(車子原重) + f(貨物重量)
+	L當成lamda，L = 1/44x737 = 0.00003083
+	kNV :
+	k = 0.2(引擎磨擦係數), N = 33(引擎轉速)(轉/秒),V = 5(發動機排量)
+	==> kNV = 0.2 x 33 x 5 = 33
+	wrav :
+	w = 本身車重 = 6350 kg
+	r = gama = 1/(1000 x 0.4 x 0.9) = 0.0027778
+	a = 0 + 0 + 9.81 x 0.01 x 1 = 0.0981
+	==> wra = 6350 x 0.0027778 x 0.0981 = 1.73088843
+	==> 等同於 1.73088843 x v
+	rafv :
+	r = gama = 1/(1000 x 0.4 x 0.9) = 0.0027778
+	a = 0 + 0 + 9.81 x 0.01 x 1 = 0.0981
+	==> ra = 0.00027250218
+	==> 等同於 0.00027250218 x f x v
+	Brv^3 :
+	B = 0.5 x 0.7 x 1.2041 x 3.912 = 1.64865372
+	r = 0.0027778
+	==> Br = 0.004579630303416
+	==> 等同於 0.004579630303416 x v^3
+	最後整合 :
+	==> 0.00003083(33 + 1.73088843 x v + 0.00027250218 x f x v + 0.004579630303416 x v^3)d/v
+
+	會被變動的就是 d(距離) v(速度) f(載重)
+	其中也會紀錄下total distance
+	*************************************************************************/
+	//cout << "Obj1 version 2" << endl;
+	double next_posx, next_posy,
+		now_pos = depot_section_, next_pos; //現在不是從1開始，都是從0開始(depot_section)
+	//vector <double> v_dis; //用在object 2 (每段距離)
+	double total_distance = 0.0,now_load = 0;
+
+	for (size_t i = 1; i<x.size(); i++)
+	{
+		//cout << "i = " << i << endl;
+		next_pos = x[i];
+		if (now_pos == depot_section_)
+		{
+			//cout << "in" << endl;
+			int tmp = i;
+			//now_load = 0;
+			// ----- 計算這台車出發時的載重 -----
+			while (x[tmp] != depot_section_)
+			{
+				//cout << "x[" << tmp << "] = " << x[tmp] << endl;
+				//cout << "d = " << node_[x[tmp]].demand << endl;
+				now_load += node_[x[tmp]].demand;
+				tmp++;
+			}
+			//cout << "load = " << now_load << endl;
+		}
+		double dis = distance_[now_pos][next_pos]/1000;//因為他是給公尺，所以應該要/1000吧
+		f[0] += 0.00003083 * (33 + 1.73088843 * speed[now_pos] + 0.00027250218 * now_load * speed[now_pos] + 0.004579630303416 * speed[now_pos]* speed[now_pos]* speed[now_pos]) * dis / speed[now_pos];
+		total_distance += dis;
+		//cout << "f0 - " << i << " = " << f[0] << endl;
+		now_load -= node_[next_pos].demand;
+		//cout << "nowload -= " << node_[next_pos].demand << " = " << now_load << endl;
+		now_pos = next_pos;
+	}
+	indv->set_total_dis(total_distance);
+	//cout << "f[0] = " << f[0] << endl;
+	//cout << "total dis = " << total_distance/1000 << "(KM)" << endl; //getchar();
+	//cout << "Fuel = " << f[0] << "(L)" << endl; //getchar();
 
 	// ----- object 2 (driving time): total using time ------
 	/*************************************************************************
@@ -681,33 +763,32 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 	*************************************************************************/
 	//cout << "Obj 2" << endl; getchar();
 	size_t next_index = 0, now_index = 0;
-	for (size_t i = 0; i<x.size(); i++)
+	for (size_t i = 1; i<x.size(); i++)
 	{
-		if (x[i] == depot() && i != 0)
+		if (x[i] == depot())
 		{
 			next_index = i;
 			int wait_time = 0;
 			for (size_t j = now_index; j<next_index; j++)
 			{
-				// ---- calculate waiting time
-				if (j > 0) 
+				// ---- calculate waiting time -----
+				
+				if (f[1] < node_[x[j]].ready_time)
 				{
-					wait_time = node_[x[i]].ready_time;
-					if (f[1] < node_[x[i]].ready_time)
-					{
-						wait_time = node_[x[i]].ready_time - f[1];
-					}
-					else wait_time = 0;
+					wait_time = node_[x[j]].ready_time - f[1];
 				}
-				// ---- calculate total time
-				f[1] += wait_time + node_[x[j]].service_time + distance_[x[j]][x[j + 1]] / speed[i];
-				//cout << "emission = " << f[1] << endl;
-				//getchar();
+				else wait_time = 0;
+				
+				// ---- calculate total time -----
+				f[1] += wait_time + node_[x[j]].service_time + distance_[x[j]][x[j + 1]] / (speed[j]*1000/3600);
+				//cout << "f[1] += " << wait_time + node_[x[j]].service_time + distance_[x[j]][x[j + 1]] / speed[j] << " = " << f[1] << endl;
+				//cout << "time = " << f[1] << endl; //getchar(); 
 			}
 			now_index = next_index;
 		}
 	}
-	  		//cout << "after f[1] = " << f[1] << endl;
+	//cout << "total time  = " << f[1] << "(s)" << endl; 
+	//cout << "= " << f[1] / 3600 << "(h)" << endl; //getchar();
 
 	return true;
 }

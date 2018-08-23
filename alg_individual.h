@@ -35,6 +35,9 @@ public:
 	TObjVec & speed() { return speeds_; }
 	const TObjVec & speed() const { return speeds_; }
 
+	void set_total_dis(double td) { total_distance_ = td; }
+	const double & total_dis() const { return total_distance_; }
+
 	void set_num_vehicles(size_t nv) { num_vehicles_ = nv; }
 	size_t num_vehicles() const { return num_vehicles_;  }
 
@@ -60,6 +63,7 @@ private:
 	TDecVec variables_;
 	TDecVec real_routes_; // the sequence is separated by depot points
 	size_t num_vehicles_ = 0,num_evaluate_ = 0;
+	double total_distance_;
 	TObjVec speeds_;
 	TObjVec objectives_;
 	TObjVec converted_objectives_;

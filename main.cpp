@@ -98,31 +98,34 @@ int main()
 				cout << "Can't write point file!" << endl;
 				getchar();
 			}
-			double min_dis = solutions[0].objs()[0],min_emission = solutions[0].objs()[1];
-			int min_dis_index = 0,min_emission_index = 0;
+			double min_obj1 = solutions[0].objs()[0],min_time = solutions[0].objs()[1];
+			int min_obj1_index = 0,min_time_index = 0;
 			for (size_t i = 0; i < solutions.size(); i++)
 			{
 				point_file << solutions[i].objs()[0] << ' ' << solutions[i].objs()[1] << endl;
 
-				if (solutions[i].objs()[0] < min_dis)
+				if (solutions[i].objs()[0] < min_obj1)
 				{
-					min_dis = solutions[i].objs()[0];
-					min_dis_index = i;
+					min_obj1 = solutions[i].objs()[0];
+					min_obj1_index = i;
 				}
-				if (solutions[i].objs()[1] < min_emission)
+				if (solutions[i].objs()[1] < min_time)
 				{
-					min_emission = solutions[i].objs()[1];
-					min_emission_index = i;
+					min_time = solutions[i].objs()[1];
+					min_time_index = i;
 				}
 			}
 			point_file.close();
 
-			cout << "vehicle = " << solutions[min_dis_index].num_vehicles() << endl;
-			printf("min distance (%d) = %.3f\n", min_dis_index, min_dis);
-			printf("min emission (%d) = %.3f\n", min_emission_index, min_emission);
+			cout << "vehicle = " << solutions[min_obj1_index].num_vehicles() << endl;
+			printf("min fuel (%d) = %.3f(L)\n", min_obj1_index, min_obj1);
+			printf("this distance = %.3f(km)\n", solutions[min_obj1_index].total_dis());
+			printf("min time (%d) = %.3f(h)\n", min_time_index, min_time/3600);
+			printf("this distance = %.3f(km)\n", solutions[min_time_index].total_dis());
+			//getchar();
 			// --- output the 2 best chromesomes to solution.txt
-			OutputChromesome(solutions[min_dis_index], file_name);
-			OutputChromesome(solutions[min_emission_index], file_name);
+			OutputChromesome(solutions[min_obj1_index], file_name);
+			OutputChromesome(solutions[min_time_index], file_name);
 
 			// --- input the data and output the point in std::set
 			//for (size_t s = 0; s < solutions.size(); s++)
@@ -175,13 +178,14 @@ bool OutputChromesome(const CIndividual chrome,const string file_name)
 		return false;
 	}
 	outfile << "x chrome : ";
-	for (auto e : chrome.routes())
+	for (auto e : chrome.vars())
 	{
 		outfile << e << " ";
 	}
 	outfile << endl;
-	outfile << "total distance = " << chrome.objs()[0] << endl;
-	outfile << "emission = " << chrome.objs()[1] << endl;
+	outfile << "fuel consumed = " << chrome.objs()[0] << "(L)"<< endl;
+	outfile << "time = " << chrome.objs()[1]/3600 << "(H)" << endl;
+	outfile << "distance = " << chrome.total_dis() << "(KM)" << endl;
 
 	outfile.close();
 	return true;

@@ -134,10 +134,10 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 		//MyTimers.GetTimer("DPEvaluate")->end();
 		
 	}
-	cout << "Initial pop feasible% = " << (cnt / PopSize) * 100 << '%' << endl; getchar();
+	cout << "Initial pop feasible% = " << (cnt / PopSize) * 100 << '%' << endl; //getchar();
 
 	double G_Min_dis = pop[cur][0].objs()[0];
-	for (size_t t=0; t<gen_num_; t+=1)
+	for (size_t t=0; t<gen_num_ && 0; t+=1)
 	{
 		//cout << "I can't in here!" << endl; //random set exp and can't use refinement
 		//getchar();

@@ -298,12 +298,12 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 
 	// ----- set up the initial speed -----
 	CIndividual::TObjVec & speed = indv->speed();
-	speed.resize(x.size());
+	speed.resize(x.size()-1);
 	for (int i = 0; i < x.size()-1; i++)
 	{
+		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
 		speed[i] = prob.avg_speed();
 	}
-	speed[x.size() - 1] = 0;
 }
 //---------------------------------------------------------------------------
 
