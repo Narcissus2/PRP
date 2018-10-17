@@ -454,7 +454,7 @@ bool CProblemSelf::Dp2Object(CIndividual *indv, int obj1_rate) const
 					//if (dp[j][car - 1] + dis_board[j][i - 1]  < min_value)//&& (car[j] + 1 <= prob.num_vehicles())) 
 					{
 						min_value = dp[j][car - 1] + dis_board[j][i - 1] + obj2 * emission_board[j][i - 1];
-						//min_value = dp[j][car - 1] + dis_board[j][i - 1] ;
+						//min_value = dp[j][car - 1] + [dis_board[j][i - 1] ;
 						/*printf("dp[%d][%d] = %.2f\n", j, car-1, dp[j][car - 1]);
 						printf("dis_board[%d][%d] = %.2f\n", j, i - 1, dis_board[j][i - 1]);
 						cout << "in min_value = " << min_value << endl;*/
@@ -742,9 +742,11 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 			}
 			//cout << "load = " << now_load << endl;
 		}
-		double dis = distance_[now_pos][next_pos]/1000;//因為他是給公尺，所以應該要/1000吧
+		//double dis = distance_[now_pos][next_pos]/1000;//因為他是給公尺，所以應該要/1000吧
+		double dis = distance_[now_pos][next_pos];
 		f[0] += 0.00003083 * (33 + 1.73088843 * speed[now_pos] + 0.00027250218 * now_load * speed[now_pos] + 0.004579630303416 * speed[now_pos]* speed[now_pos]* speed[now_pos]) * dis / speed[now_pos];
-		total_distance += dis;
+		//total_distance += dis;
+		total_distance += dis/1000;//因為他是給公尺，所以應該要/1000吧
 		//cout << "f0 - " << i << " = " << f[0] << endl;
 		now_load -= node_[next_pos].demand;
 		//cout << "nowload -= " << node_[next_pos].demand << " = " << now_load << endl;

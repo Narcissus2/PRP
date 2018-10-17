@@ -183,6 +183,12 @@ bool OutputChromesome(const CIndividual chrome,const string file_name)
 		outfile << e << " ";
 	}
 	outfile << endl;
+	outfile << "speed : ";
+	for (auto e : chrome.speed())
+	{
+		outfile << e << " ";
+	}
+	outfile << endl;
 	outfile << "fuel consumed = " << chrome.objs()[0] << "(L)"<< endl;
 	outfile << "time = " << chrome.objs()[1]/3600 << "(H)" << endl;
 	outfile << "distance = " << chrome.total_dis() << "(KM)" << endl;

@@ -545,7 +545,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 	fstream eva_file;
 	eva_file.open(file_name, ios::app);
 	if (!eva_file)cout << "Can't write eva..." << endl;
-	eva_file << "eva" << endl << total_evaluate << endl;
+	eva_file << "total eva = " << total_evaluate << endl;
 	eva_file.close();
 	//getchar();
 
