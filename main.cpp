@@ -1,4 +1,3 @@
-
 #include "problem_base.h"
 #include "alg_nsgaiii.h"
 #include "alg_population.h"
@@ -20,7 +19,6 @@
 
 using namespace std;
 
-bool OutputChromesome(const CIndividual chrome, const string file_name);
 class Point_set
 {
 public:
@@ -35,6 +33,8 @@ public:
 	}
 };
 
+bool OutputChromesome(const CIndividual chrome, const string file_name);
+
 int main()
 {
 	ifstream exp_list("explist.ini");
@@ -43,27 +43,27 @@ int main()
 	string exp_name;
 	while (exp_list >> exp_name)
 	{
-	    cout << "exp_name = " << exp_name << endl;
+		cout << "exp_name = " << exp_name << endl;
 		ifstream exp_ini("Experiments\\" + exp_name); //exp_name = xxx.ini
 		if (!exp_ini) { cout << exp_name << " file does not exist." << endl; getchar();  continue; }
 		// ----- Setup the expriment ------
 		cout << "Setup the expirement" << endl;
 		CNSGAIII nsgaiii;
 		BProblem *problem = 0;
-		set<Point_set> ps;
+		//set<Point_set> ps; //用來看目前有幾個不同個體
 
 		SetupExperiment(nsgaiii, &problem, exp_ini);
 		//cout << "---- Setup finish ----" << endl; getchar();
 		Gnuplot gplot;
 		ofstream IGD_results(nsgaiii.name() + "-" + problem->name() + "-IGD.txt"); // output file for IGD values per run
 
-		// ----- Run the algorithm to solve the designated function -----
+																				   // ----- Run the algorithm to solve the designated function -----
 		const size_t NumRuns = 20; // 20 is the setting in NSGA-III paper
-		for (size_t r=0; r<NumRuns; r+=1)
-		/*bool set_check = false;
-		const size_t set_num = 1000000;
-		size_t r = 0;
-		while(!set_check)*/
+		for (size_t r = 0; r<NumRuns; r += 1)
+			/*bool set_check = false;
+			const size_t set_num = 1000000;
+			size_t r = 0;
+			while(!set_check)*/
 		{
 			//r++; //wu cnt 
 			srand(r); cout << "Solving " << problem->name() << " ... Run: " << r << endl;
@@ -84,7 +84,7 @@ int main()
 
 			// --- Calculate the performance metric (IGD)
 			TFront PF, approximation;
-			IGD_results << IGD(LoadFront(PF, "PF\\"+ problem->name() + "-PF.txt"), LoadFront(approximation, logfname)) << endl;
+			IGD_results << IGD(LoadFront(PF, "PF\\" + problem->name() + "-PF.txt"), LoadFront(approximation, logfname)) << endl;
 
 			// --- Visualization (Show the last 3 dimensions. You need gnuplot.)
 			//ShowPopulation(gplot, solutions, "gnuplot-show"); system("pause");
@@ -98,8 +98,8 @@ int main()
 				cout << "Can't write point file!" << endl;
 				getchar();
 			}
-			double min_obj1 = solutions[0].objs()[0],min_time = solutions[0].objs()[1];
-			int min_obj1_index = 0,min_time_index = 0;
+			double min_obj1 = solutions[0].objs()[0], min_obj2 = solutions[0].objs()[1];
+			int min_obj1_index = 0, min_obj2_index = 0;
 			for (size_t i = 0; i < solutions.size(); i++)
 			{
 				point_file << solutions[i].objs()[0] << ' ' << solutions[i].objs()[1] << endl;
@@ -109,23 +109,25 @@ int main()
 					min_obj1 = solutions[i].objs()[0];
 					min_obj1_index = i;
 				}
-				if (solutions[i].objs()[1] < min_time)
+				if (solutions[i].objs()[1] < min_obj2)
 				{
-					min_time = solutions[i].objs()[1];
-					min_time_index = i;
+					min_obj2 = solutions[i].objs()[1];
+					min_obj2_index = i;
 				}
 			}
 			point_file.close();
 
 			cout << "vehicle = " << solutions[min_obj1_index].num_vehicles() << endl;
 			printf("min fuel (%d) = %.3f(L)\n", min_obj1_index, min_obj1);
-			printf("this distance = %.3f(km)\n", solutions[min_obj1_index].total_dis());
-			printf("min time (%d) = %.3f(h)\n", min_time_index, min_time/3600);
-			printf("this distance = %.3f(km)\n", solutions[min_time_index].total_dis());
+			printf("time = %.3f(h)\n", min_obj1_index, solutions[min_obj1_index].objs()[1] / 3600);
+			printf("this distance = %.3f(km)\n\n", solutions[min_obj1_index].total_dis());
+			printf("min time (%d) = %.3f(h)\n", min_obj2_index, min_obj2 / 3600);
+			printf("fuel (%d) = %.3f(L)\n", min_obj2_index, solutions[min_obj2_index].objs()[0]);
+			printf("this distance = %.3f(km)\n", solutions[min_obj2_index].total_dis());
 			//getchar();
 			// --- output the 2 best chromesomes to solution.txt
 			OutputChromesome(solutions[min_obj1_index], file_name);
-			OutputChromesome(solutions[min_time_index], file_name);
+			OutputChromesome(solutions[min_obj2_index], file_name);
 
 			// --- input the data and output the point in std::set
 			//for (size_t s = 0; s < solutions.size(); s++)
@@ -167,7 +169,7 @@ int main()
 	return 0;
 }
 
-bool OutputChromesome(const CIndividual chrome,const string file_name)
+bool OutputChromesome(const CIndividual chrome, const string file_name)
 {
 	fstream outfile;
 
@@ -189,8 +191,8 @@ bool OutputChromesome(const CIndividual chrome,const string file_name)
 		outfile << e << " ";
 	}
 	outfile << endl;
-	outfile << "fuel consumed = " << chrome.objs()[0] << "(L)"<< endl;
-	outfile << "time = " << chrome.objs()[1]/3600 << "(H)" << endl;
+	outfile << "fuel consumed = " << chrome.objs()[0] << "(L)" << endl;
+	outfile << "time = " << chrome.objs()[1] / 3600 << "(H)" << endl;
 	outfile << "distance = " << chrome.total_dis() << "(KM)" << endl;
 
 	outfile.close();

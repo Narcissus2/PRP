@@ -29,7 +29,7 @@ public:
 	void WriteFile(CIndividual chromosome, std::string file_name);
 	bool Same(const CIndividual ch1,const CIndividual ch2);
 	void ShowChange(const CIndividual ch1, const CIndividual ch2);
-	void CheckSame_pop(const CPopulation p);
+	bool CheckSame_pop(const CPopulation p);
 
 	const std::string & name() const { return name_; }
 private:

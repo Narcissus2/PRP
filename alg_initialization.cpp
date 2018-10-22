@@ -212,6 +212,14 @@ CRandomInitialization RandomInitialization;
 //}
 //---------------------------------------------------------------------------
 
+/***********************************************************
+	random permutate()
+	先隨機產生隨機序列(沒倉庫)
+	然後開始把倉庫放進去
+	(依照load還有 time window，time window的看法是用avg speed去算時間，超時就判斷為下一台車)
+	然後speed 全部設為 平均值
+*************************************************************/
+
 void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &prob) const
 {
 	/*
@@ -307,10 +315,57 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 }
 //---------------------------------------------------------------------------
 
+/***********************************************************
+random permutate_nd()
+隨機產生隨機序列(沒倉庫)
+nd = no depot
+然後speed 全部設為 平均值
+*************************************************************/
+
+void CRandomInitialization::random_permutate_nd(CIndividual *indv, const BProblem &prob) const
+{
+	CIndividual::TDecVec &x = indv->vars();
+	const vector<Node> & node = prob.node();
+	const vector<vector<double>> &distance = prob.dis();
+	x.resize(prob.num_node());
+	for (size_t i = 0; i < x.size(); i += 1)
+	{
+		x[i] = i;
+	}
+
+	random_shuffle(x.begin(), x.end());
+	/*cout << "shuffle ---" << endl;
+	cout << "Please Enter to continue..." << endl; getchar();*/
+
+	swap(x[0], *find(x.begin(), x.end(), prob.depot()));
+
+	/*cout << "Permutate : " << endl;
+
+	for (int i = 0; i < x.size(); i++)
+	{
+	cout << x[i] << " ";
+	}
+	cout << endl;
+	cout << "random_permutate finish ---" << endl;
+	cout << "Please Enter to continue..." << endl; getchar();*/
+
+	// ----- set up the initial speed (好像還不用設定)-----
+	//CIndividual::TObjVec & speed = indv->speed();
+	//speed.resize(x.size() - 1);
+	//for (int i = 0; i < x.size() - 1; i++)
+	//{
+	//	//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
+	//	speed[i] = prob.avg_speed();
+	//}
+
+}
+
+//---------------------------------------------------------------------------
+
 void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) const
 {
     cout << "pop size = " << pop->size() << endl;
-    const size_t n_random_num = 0;
+    //const size_t n_random_num = 0;
     for (size_t i=0; i<pop->size(); i+=1)
     {
 		//cout << "pop " << i << endl;
@@ -338,10 +393,9 @@ void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) c
 			}
 		}*/
 		//-------------------------------------------------------
-		this->random_permutate(&(*pop)[i], prob);
+		this->random_permutate_nd(&(*pop)[i], prob);
 		//this->block_initial2(&(*pop)[i], prob); //GVRP
 		//cout << "sol = " << (*pop)[i].objs()[0] << endl;
 		
     }
-	//cout << "Initial OK" << endl; getchar();
 }

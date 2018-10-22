@@ -68,7 +68,6 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 
 	//num_vars_ = num_node_; //我不知道這有什麼意思..
 
-	//feasible_dis_ = 5e3; //還不確定
 	cout << "Problem set ------- OK" << endl;
 	//cout << "Please Enter to continue..." << endl;  getchar();
 
