@@ -33,7 +33,7 @@ public:
 	}
 };
 
-bool OutputChromesome(const CIndividual chrome, const string file_name);
+bool OutputChromesome(const CIndividual &chrome, const string file_name, const BProblem &prob);
 
 int main()
 {
@@ -58,7 +58,7 @@ int main()
 		ofstream IGD_results(nsgaiii.name() + "-" + problem->name() + "-IGD.txt"); // output file for IGD values per run
 
 																				   // ----- Run the algorithm to solve the designated function -----
-		const size_t NumRuns = 20; // 20 is the setting in NSGA-III paper
+		const size_t NumRuns = 10; // 20 is the setting in NSGA-III paper
 		for (size_t r = 0; r<NumRuns; r += 1)
 			/*bool set_check = false;
 			const size_t set_num = 1000000;
@@ -118,16 +118,16 @@ int main()
 			point_file.close();
 
 			cout << "vehicle = " << solutions[min_obj1_index].num_vehicles() << endl;
-			printf("min fuel (%d) = %.3f(L)\n", min_obj1_index, min_obj1);
-			printf("time = %.3f(h)\n", min_obj1_index, solutions[min_obj1_index].objs()[1] / 3600);
-			printf("this distance = %.3f(km)\n\n", solutions[min_obj1_index].total_dis());
-			printf("min time (%d) = %.3f(h)\n", min_obj2_index, min_obj2 / 3600);
-			printf("fuel (%d) = %.3f(L)\n", min_obj2_index, solutions[min_obj2_index].objs()[0]);
-			printf("this distance = %.3f(km)\n", solutions[min_obj2_index].total_dis());
+			printf("min fuel (%d) = %.3lf(L)\n", min_obj1_index, min_obj1);
+			printf("time = %.3lf(h)\n", solutions[min_obj1_index].objs()[1] / 3600);
+			printf("this distance = %.3lf(km)\n\n", solutions[min_obj1_index].total_dis());
+			printf("min time (%d) = %.3lf(h)\n", min_obj2_index, min_obj2 / 3600);
+			printf("fuel (%d) = %.3lf(L)\n", min_obj2_index, solutions[min_obj2_index].objs()[0]);
+			printf("this distance = %.3lf(km)\n", solutions[min_obj2_index].total_dis());
 			//getchar();
 			// --- output the 2 best chromesomes to solution.txt
-			OutputChromesome(solutions[min_obj1_index], file_name);
-			OutputChromesome(solutions[min_obj2_index], file_name);
+			OutputChromesome(solutions[min_obj1_index], file_name,*problem);
+			OutputChromesome(solutions[min_obj2_index], file_name,*problem);
 
 			// --- input the data and output the point in std::set
 			//for (size_t s = 0; s < solutions.size(); s++)
@@ -169,7 +169,7 @@ int main()
 	return 0;
 }
 
-bool OutputChromesome(const CIndividual chrome, const string file_name)
+bool OutputChromesome(const CIndividual &chrome, const string file_name,const BProblem &prob)
 {
 	fstream outfile;
 
@@ -180,7 +180,7 @@ bool OutputChromesome(const CIndividual chrome, const string file_name)
 		return false;
 	}
 	outfile << "x chrome : ";
-	for (auto e : chrome.vars())
+	for (auto e : chrome.routes())
 	{
 		outfile << e << " ";
 	}
@@ -191,9 +191,18 @@ bool OutputChromesome(const CIndividual chrome, const string file_name)
 		outfile << e << " ";
 	}
 	outfile << endl;
-	outfile << "fuel consumed = " << chrome.objs()[0] << "(L)" << endl;
-	outfile << "time = " << chrome.objs()[1] / 3600 << "(H)" << endl;
+	double fuel_consumed = chrome.objs()[0],
+		time = chrome.objs()[1] / 3600,
+		fuel_cost = fuel_consumed*prob.fc(),
+		driver_cost = time * prob.fd(),
+		total_cost = fuel_cost + driver_cost;
+	outfile << "fuel consumed = " << fuel_consumed << "(L)" << endl;
+	outfile << "fuel cost = " << fuel_cost << "($)" <<  endl;
+	outfile << "time = " << time << "(H)" << endl;
+	outfile << "driver cost = " << driver_cost << "($)" << endl;
 	outfile << "distance = " << chrome.total_dis() << "(KM)" << endl;
+	outfile << "total cost = " << total_cost << "($)" << endl;
+
 
 	outfile.close();
 	return true;

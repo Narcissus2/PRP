@@ -226,6 +226,7 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 		隨機排序後依據車子載重和time window 去塞倉庫
 	*/
 	CIndividual::TDecVec &x = indv->vars();
+	CIndividual::TDecVec &routes = indv->routes();
 	const vector<Node> & node = prob.node();
 	const vector<vector<double>> &distance = prob.dis();
 	x.resize(prob.num_node());
@@ -233,13 +234,16 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 	{
 		x[i] = i;
 	}
-
 	random_shuffle(x.begin(), x.end());
 	/*cout << "shuffle ---" << endl;
 	cout << "Please Enter to continue..." << endl; getchar();*/
-	
 	swap(x[0], *find(x.begin(), x.end(), prob.depot()));
-
+	// put x in routes 
+	routes.resize(0);
+	for (int i = 0; i < x.size(); i++)
+	{
+		routes.push_back(x[i]);
+	}
 	/*cout << "Permutate : " << endl;
 
 	for (int i = 0; i < x.size(); i++)
@@ -253,27 +257,27 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 	// ----- input depot consider the capacity -----
 	int capacity = 0;
 	//cout << "max load = " << prob.maxload() << endl;
-	for (int i = 0; i < x.size(); i++)
+	for (int i = 0; i < routes.size(); i++)
 	{
-		if (x[i] == prob.depot())
+		if (routes[i] == prob.depot())
 		{
 			capacity = 0;
 		}
 
-		if (capacity + node[x[i]].demand > prob.maxload())
+		if (capacity + node[routes[i]].demand > prob.maxload())
 		{
 			std::vector<CIndividual::TGene>::iterator it;
-			it = x.begin();
-			x.insert(it+i, prob.depot());
+			it = routes.begin();
+			routes.insert(it+i, prob.depot());
 			capacity = 0;
 		}
 		else
 		{
-			capacity += node[x[i]].demand;
+			capacity += node[routes[i]].demand;
 		}
 		//cout << "capacity = " << capacity << endl;
 	}
-	x.push_back(prob.depot());
+	routes.push_back(prob.depot());
 	/*cout << "Permutate After insert(capacity): " << endl;
 	for (int i = 0; i < x.size(); i++)
 	{
@@ -285,14 +289,14 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 
 	// ----- insert depot consider the time window -----
 	int time = 0;
-	for (int i = 0; i < x.size()-1; i++)
+	for (int i = 0; i < routes.size()-1; i++)
 	{
-		if (node[x[i]].ready_time + node[x[i]].service_time + distance[x[i]][x[i + 1]] / prob.avg_speed()>node[x[i + 1]].due_time)
+		if (node[routes[i]].ready_time + node[routes[i]].service_time + distance[routes[i]][routes[i + 1]] / prob.avg_speed()>node[routes[i + 1]].due_time)
 		{
 			cout << "i and i+1 : " << i << " " << i + 1 << endl;
 			std::vector<CIndividual::TGene>::iterator it;
-			it = x.begin();
-			x.insert(it + i+1, prob.depot());
+			it = routes.begin();
+			routes.insert(it + i+1, prob.depot());
 		}
 	}
 	/*cout << "Permutate After insert(time window): " << endl;
@@ -306,11 +310,12 @@ void CRandomInitialization::random_permutate(CIndividual *indv, const BProblem &
 
 	// ----- set up the initial speed -----
 	CIndividual::TObjVec & speed = indv->speed();
-	speed.resize(x.size()-1);
-	for (int i = 0; i < x.size()-1; i++)
+	speed.resize(routes.size()-1);
+	for (int i = 0; i < routes.size()-1; i++)
 	{
 		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
-		speed[i] = prob.avg_speed();
+		speed[i] = prob.avg_speed(); // 單位是 m/s
+		//speed[i] = 25; // 90 km/h
 	}
 }
 //---------------------------------------------------------------------------
@@ -327,17 +332,17 @@ void CRandomInitialization::random_permutate_nd(CIndividual *indv, const BProble
 	CIndividual::TDecVec &x = indv->vars();
 	const vector<Node> & node = prob.node();
 	const vector<vector<double>> &distance = prob.dis();
-	x.resize(prob.num_node());
+	x.resize(prob.num_node()-1); // 不需要倉庫那個點，所以就產生序列個數就好(prob.num_node()-1)
 	for (size_t i = 0; i < x.size(); i += 1)
 	{
-		x[i] = i;
+		x[i] = i + 1;
 	}
 
 	random_shuffle(x.begin(), x.end());
 	/*cout << "shuffle ---" << endl;
 	cout << "Please Enter to continue..." << endl; getchar();*/
 
-	swap(x[0], *find(x.begin(), x.end(), prob.depot()));
+	//swap(x[0], *find(x.begin(), x.end(), prob.depot()));
 
 	/*cout << "Permutate : " << endl;
 
@@ -349,14 +354,14 @@ void CRandomInitialization::random_permutate_nd(CIndividual *indv, const BProble
 	cout << "random_permutate finish ---" << endl;
 	cout << "Please Enter to continue..." << endl; getchar();*/
 
-	// ----- set up the initial speed (好像還不用設定)-----
-	//CIndividual::TObjVec & speed = indv->speed();
-	//speed.resize(x.size() - 1);
-	//for (int i = 0; i < x.size() - 1; i++)
-	//{
-	//	//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
-	//	speed[i] = prob.avg_speed();
-	//}
+	//----- set up the initial speed (好像還不用設定)-----
+	CIndividual::TObjVec & speed = indv->speed();
+	speed.resize(x.size() - 1);
+	for (int i = 0; i < x.size() - 1; i++)
+	{
+		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
+		speed[i] = prob.avg_speed();
+	}
 
 }
 
@@ -393,9 +398,8 @@ void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) c
 			}
 		}*/
 		//-------------------------------------------------------
-		this->random_permutate_nd(&(*pop)[i], prob);
+		this->random_permutate(&(*pop)[i], prob);
 		//this->block_initial2(&(*pop)[i], prob); //GVRP
 		//cout << "sol = " << (*pop)[i].objs()[0] << endl;
-		
     }
 }

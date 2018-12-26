@@ -3,6 +3,7 @@
 #include "problem_self.h"
 #include "aux_math.h"
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -527,6 +528,7 @@ bool CPartNEH2Object::operator()(CIndividual *indv, const BProblem &prob, const 
 				size_t target = 0;
 				double min_value = 1e9;
 				size_t now_cus = routes[j];
+				
 				for (size_t k = j; k >= rand_head; k--)
 				{
 					routes.erase(routes.begin() + j);
@@ -587,12 +589,14 @@ bool CPartNN2Object::operator()(CIndividual *indv, const BProblem &prob, const i
 			{
 				size_t target = j;
 				//double local_dis = distance[routes[j - 1] - 1][routes[j] - 1];
-				double local_value = obj1 * distance[routes[j - 1] - 1][routes[j] - 1] + obj2 * m *((FCR_full_ - FCR_empty_) * (prob.maxload() - n[routes[j - 1] - 1].demand) / prob.maxload())  * distance[routes[j - 1] - 1][routes[j] - 1];
+				double local_value = obj1 * distance[routes[j - 1] - 1][routes[j] - 1] 
+					+ obj2 * m *((FCR_full_ - FCR_empty_) * (prob.maxload() - n[routes[j - 1] - 1].demand) / prob.maxload())  * distance[routes[j - 1] - 1][routes[j] - 1];
 
 				for (size_t k = j + 1; k <= rand_tail; k++)
 				{
 					//double temp_dis = distance[routes[j - 1] - 1][routes[k] - 1];
-					double temp_value = obj1 * distance[routes[j - 1] - 1][routes[k] - 1] + obj2 * m *((FCR_full_ - FCR_empty_) * (prob.maxload() - n[routes[j - 1] - 1].demand) / prob.maxload())  * distance[routes[j - 1] - 1][routes[k] - 1];
+					double temp_value = obj1 * distance[routes[j - 1] - 1][routes[k] - 1] 
+						+ obj2 * m *((FCR_full_ - FCR_empty_) * (prob.maxload() - n[routes[j - 1] - 1].demand) / prob.maxload())  * distance[routes[j - 1] - 1][routes[k] - 1];
 					//indv->add_eva();
 					if (temp_value < local_value)
 					{
@@ -818,7 +822,8 @@ bool COnePointOpt::operator()(CIndividual *indv, const BProblem &prob) const
 
 //------------------------------------------------------------------------------------------
 
-bool CAllPointOpt::operator()(CIndividual *indv, const BProblem &prob, const int obj1_rate, const double normal_dis, const double normal_emi, const double Min_dis, const double Min_emi) const
+bool CAllPointOpt::operator()(CIndividual *indv, const BProblem &prob, const int obj1_rate, 
+	const double normal_dis, const double normal_emi, const double Min_dis, const double Min_emi) const
 {
 	CIndividual::TDecVec &routes = indv->routes();
 	const vector<Node> & n = prob.node();
@@ -1201,6 +1206,286 @@ bool COnePointRelocation::operator()(CIndividual *indv, const BProblem &prob) co
 
 	return true;
 }
+//------------------------------------------------------------------------------------------
+
+bool Initial_E::operator()(CIndividual *indv, const BProblem &prob,int s,int e) const
+{
+	// Initial e_up and e_down
+
+	CIndividual::TDecVec &routes = indv->routes();
+	CIndividual::TDecVec &eup = indv->e_up();
+	CIndividual::TDecVec &edown = indv->e_down();
+	CIndividual::TObjVec &speeds = indv->speed();
+
+	const vector<Node> & n = prob.node();
+	const vector<vector<double>> & distance = prob.dis();
+	
+	edown[s] = n[prob.depot()].ready_time;
+	eup[s] = n[prob.depot()].ready_time;
+
+	for (int i = s; i < e; i++)
+	{
+		double driving_time = distance[routes[i]][routes[i + 1]] / speeds[i];
+		edown[i + 1] = eup[i] + driving_time;
+		if (i != e - 1)
+		{
+			eup[i + 1] = edown[i] + n[routes[i]].service_time;
+		}
+		else
+		{
+			eup[i + 1] = edown[i];
+		}
+	}
+	return true;
+}
+//------------------------------------------------------------------------------------------
+bool SpeedOptimalAlgorithm::operator()(CIndividual *indv, const BProblem &prob, int s, int e,int N) const
+{
+	cout << "s = " << s << endl;
+	cout << "e = " << e << endl;
+	//SOA----------- calculate the optimal speed set to the current route
+	/* 
+		從2012那篇的SOA模型建過來的
+	*/
+	// Speed Optimization Algorithm 
+	CIndividual::TDecVec &routes = indv->routes();
+	CIndividual::TDecVec &eup = indv->e_up();
+	CIndividual::TDecVec &edown = indv->e_down();
+	CIndividual::TObjVec &speeds = indv->speed();
+	
+	const vector<Node> & n = prob.node();
+	const vector<vector<double>> & distance = prob.dis();
+
+	/*cout << "route size = " << routes.size() << endl;
+	cout << "speed size = " << speeds.size() << endl;*/
+	// SOA initial parameter
+	int violation = 0, p = 0;
+	double D = 0.0, T = 0.0;
+
+	// calculate D and T : total distance of this route and total service time of this route
+	//cout << "calculate D T " << endl;
+	for (int i = s; i<e; i++)
+	{
+		D += distance[routes[i]][routes[i + 1]];
+		T += n[routes[i]].service_time;
+	}
+	cout << "T = " << T << endl;
+	// find the infeasible point and adjust the optimal speed
+	/*
+	本身可以得到的有v,distance,route(s~e),service time(t),[a,b].
+	這些只有v是可以變的
+	需要計算的有 v*,e上bar,e下bar
+	每一個點都有一個v*,e上bar,e下bar
+	只會跟幾個有關係,是不是只需要用幾個就可以,不用開完整大小
+	*/
+	
+
+	//下面這區應該不用了////////////////////////////////////////////
+	/*if (routes[s] == prob.depot())
+	{
+		edown[s] = n[prob.depot()].ready_time;
+		eup[s] = n[prob.depot()].ready_time;
+	}*/
+
+	//for (int i = s; i < e; i++) 
+	//{
+	//	/*cout << "distance or speed ?" << endl;
+	//	cout << i << " " << i + 1 << endl;*/
+	//	double driving_time = distance[routes[i]][routes[i + 1]] / speeds[i];
+	//	//cout << "push back 1?" << endl;
+	//	edown[i+1] = eup[eup.size() - 1] + driving_time;
+	//	//cout << "push_back ?" << endl;
+	//	if (i != e - 1)
+	//	{
+	//		eup[i+1] = edown[edown.size() - 1] + n[i].service_time;
+	//	}
+	//	else
+	//	{
+	//		eup[i+1] = edown[edown.size() - 1];
+	//	}
+	//}
+	////////////////////////////////////////////////////////////////
+
+	// SOA process 
+	//cout << "SOA process" << endl;
+	for (int i = s + 1; i <= e; i++)
+	{
+		cout << "i = " << i << endl;
+		// 1.adjust the infeasible 
+		//cout << "1" << endl;
+		/*cout << "i = " << i << endl;
+		cout << "speeds size = " << speeds.size() << endl;
+		cout << "down size = " << e_down.size() << endl;
+		cout << "n size = " << n.size() << endl;
+		cout << "up size = " << e_up.size() << endl;*/
+		
+		if (edown[i] <= n[routes[i]].ready_time)
+		{
+			cout << "s1 ";
+			speeds[i - 1] = D / (eup[i] - n[routes[i]].ready_time - T);
+		}
+		else
+		{
+			cout << "s2 ";
+			speeds[i - 1] = D / (eup[i] - edown[i] - T);
+		}
+		cout << "step 1 speed[i-1] = " << speeds[i - 1] << endl;
+		// 2.set the v* 
+		/*
+		minimizes fuel consumption costs and wage of driver is :
+		v* = (kNV/2Br + fd/(2B*lamda*r*fc))^(1/3)
+		kNV = 0.2 x 33 x 5 = 33
+		B = 0.5 x 0.7 x 1.2041 x 3.912 = 1.64865372
+		r = 0.0027778
+		2Br = 0.009159260606832
+		kNv/2Br = 3602.910913505934
+		fd = driver wage per ($/second) = 0.0022
+		2B = 3.29730744
+		lamda = 0.00003083
+		r = gama = 1/(1000 x 0.4 x 0.9) = 0.0027778
+		fc = Fuel and CO2 emissions cost per liter ($) = 1.4
+		(2B*lamda*r*fc) = 0.000000395332006312082784
+		fd/(2B*lamda*r*fc) = 5564.9427945969979467370236720478
+		kNV/2Br + fd/(2B*lamda*r*fc) = 9167.8537081029319467270236720475
+		v* = 20.9294 (m/s) = 75.34584 (km/h)
+		先不用這個.. ?
+
+		minimizes fuel consumption costs is :
+		v* = (kNV/2Br)^(1/3)
+		k = 0.2(引擎磨擦係數), N = 33(引擎轉速)(轉/秒),V = 5(發動機排量)
+		kNV = 0.2 x 33 x 5 = 33
+		B = 0.5 x 0.7 x 1.2041 x 3.912 = 1.64865372
+		r = 0.0027778
+		2Br = 0.009159260606832
+		kNv/2Br = 3602.910913505934
+		v* = 15.3303 (m/s) = 55.18908 (km/h)
+		*/
+		double v_star = 0.0;
+		v_star = 15.3303; //minimizes fuel consumption costs
+	    //v_star = 20.9294; //minimizes fuel consumption costs and wage of driver
+
+		// 3.if arrive too early 
+		//cout << "3" << endl;
+		/*
+			用e_up算會太早到 i 點 且 用e_down看i點到達時間會>=最早可以離開的時間
+			這樣的意思是e_up被調過... 可是被調過的e_up應該要是被調整成的，不會是錯的?
+		*/
+		if (eup[i - 1] + distance[routes[i - 1]][routes[i]] / speeds[i - 1] < n[routes[i]].ready_time &&
+			edown[i] >= n[routes[i]].ready_time + n[routes[i]].service_time &&
+			i != n.size() - 1)
+		{
+			cout << "3.1 - speed[i-1] =" << speeds[i - 1] << endl;
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - edown[i - 1]);
+		}
+		/*
+			前面意思一樣看eup[i-1]太早到,但是且eup[i] >= 最晚服務時間(太晚到)
+			應該是eup 被調整過才會長成這樣
+		*/
+		else if (eup[i - 1] + distance[routes[i - 1]][routes[i]] / speeds[i - 1] < n[routes[i]].ready_time &&
+			     eup[i] >= n[routes[i]].due_time + n[routes[i]].service_time &&
+			     i != n.size() - 1)
+		{
+			cout << "3.2 - speed[i - 1] = " << speeds[i - 1] << endl;
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - edown[i - 1]);
+		}
+		// 4.last point in route ? 
+		//cout << "4" << endl;
+		if (i == N - 1 && eup[i] != edown[i])
+		{
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);
+			cout << "step 4 speed = " << speeds[i - 1] << endl;
+		}
+		
+		// 5.adjust the speed to meet the time window
+		//cout << "5" << endl;
+		if (v_star < distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - n[routes[i - 1]].ready_time - n[routes[i - 1]].service_time))
+		{
+			v_star = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - n[routes[i - 1]].ready_time - n[routes[i - 1]].service_time);
+			cout << "step 5 update v* = " << v_star << endl;
+		}
+
+		// 6.compare the v and v*
+		//cout << "6" << endl;
+		if (v_star > speeds[i - 1])
+		{
+			speeds[i - 1] = v_star;
+			cout << "step 6 (change to v*)speed[i-1] = " << speeds[i - 1] << endl;
+		}
+		cout << "final speed = " << speeds[i - 1] << endl;
+		// 7.update e_down
+		cout << "distance = " << distance[routes[i - 1]][routes[i]] << endl;
+		cout << "eup[i-1](leave) = " << eup[i - 1] << endl;
+		cout << "edown = eup + dis / speed" << endl;
+		edown[i] = eup[i - 1] + distance[routes[i - 1]][routes[i]] / speeds[i - 1];
+		
+
+		// 8.update e_up
+		if (i != e)
+		{
+			eup[i] = edown[i] + n[routes[i]].service_time;
+			// cout << "service time = " << n[routes[i]].service_time << endl;
+		}
+		// 9.set the gi 
+		/*
+			前者是太晚到,後者是太早到
+		*/
+		double gi = max(edown[i] - n[routes[i]].due_time, n[routes[i]].ready_time + n[routes[i]].service_time - eup[i]);
+		cout << "final edown[i](arrival) = " << edown[i] << endl;
+		cout << "due time = " << n[routes[i]].due_time << endl;
+		cout << "(too late)e_down[i - 1] - n[routes[i]].due_time = " << edown[i] - n[routes[i]].due_time << endl;
+		cout << "e_up[i](leave) = " << eup[i] << endl;
+		cout << "ready time = " << n[routes[i]].ready_time << endl;
+		cout << "service time = " << n[routes[i]].service_time << endl;
+		cout << "(too early)n[routes[i]].ready_time + n[routes[i]].service_time - eup[i] = " << n[routes[i]].ready_time + n[routes[i]].service_time - eup[i] << endl;
+		cout << "gi = " << gi << endl;
+		if (gi < 0.0) gi = 0.0;
+		
+
+		// 10.set the violation
+		if (gi > violation)
+		{
+			cout << "violation " << i << endl; getchar();
+			violation = gi;
+			p = i;
+		}
+		// getchar();
+	}
+
+	cout << "\neup(leave) board :" << endl;
+	for (int i = 0; i < eup.size(); i++)
+	{
+		cout << eup[i] << " " << endl; 
+	}
+	cout << endl << endl;
+
+	cout << "\nedown(arrive) board :" << endl;
+	for (int i = 0; i < edown.size(); i++)
+	{
+		cout << edown[i] << " " << endl;
+	}
+	cout << endl << endl;
+	//cout << "p = " << p << endl;
+	// recursive SOA
+	// cout << "recur" << endl;
+	if (violation > 0 && edown[p] > n[routes[p]].due_time)
+	{
+		cout << "too late" << endl;
+		eup[p] = n[routes[p]].due_time + n[routes[p]].service_time;
+		operator()(indv, prob, s, p, N);
+		operator()(indv, prob, p, e, N);
+	}
+	if (violation > 0 && eup[p] < n[routes[p]].ready_time + n[routes[p]].service_time)
+	{
+		cout << "too early" << endl;  getchar();
+		eup[p] = n[routes[p]].ready_time + n[routes[p]].service_time;
+		operator()(indv, prob, s, p, N);
+		operator()(indv, prob, p, e, N);
+	}
+	cout << "OK" << endl; getchar();
+
+	return true;
+}
+
 
 //------------------------------------------------------------------------------------------
 bool CReArrangePermutation::operator()(CIndividual *indv, const BProblem &prob) const

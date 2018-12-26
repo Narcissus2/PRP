@@ -17,6 +17,7 @@ public:
 	typedef int TGene; //Wu change "TGene" to int
 	typedef std::vector<TGene> TDecVec;
 	typedef std::vector<double> TObjVec;
+	
 
 	explicit CIndividual(std::size_t num_vars = 0, std::size_t num_objs = 0);
 
@@ -25,6 +26,12 @@ public:
 
 	TDecVec & routes() { return real_routes_; }
 	const TDecVec & routes() const { return real_routes_; }
+
+	TDecVec & e_up() { return e_up_; }
+	const TDecVec & e_up() const { return e_up_; }
+
+	TDecVec & e_down() { return e_down_; }
+	const TDecVec & e_down() const { return e_down_; }
 
 	TObjVec & objs() { return objectives_; }
 	const TObjVec & objs() const { return objectives_; }
@@ -62,6 +69,7 @@ private:
 
 	TDecVec variables_;
 	TDecVec real_routes_; // the sequence is separated by depot points
+	TDecVec e_up_, e_down_;
 	size_t num_vehicles_ = 0,num_evaluate_ = 0;
 	double total_distance_;
 	TObjVec speeds_;

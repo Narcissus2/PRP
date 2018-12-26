@@ -103,6 +103,18 @@ public:
 	bool operator()(CIndividual *c, const BProblem &prob) const;
 };
 
+class Initial_E
+{
+public:
+	bool operator()(CIndividual * indv, const BProblem & prob,int s,int e) const;
+};
+
+class SpeedOptimalAlgorithm
+{
+public:
+	bool operator()(CIndividual * indv, const BProblem & prob, int s, int e,int N) const;
+};
+
 class CReArrangePermutation
 {
 public:

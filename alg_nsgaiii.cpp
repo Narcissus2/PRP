@@ -99,6 +99,8 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 	CFartoNearSort FNS;
 	CTwoOpt OPT2;
 	CAllPointOpt APO;
+	SpeedOptimalAlgorithm SOA;
+	Initial_E IniE;
 
 
 	//MyTimers.GetTimer("Gnuplot")->start();
@@ -106,7 +108,6 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 	//MyTimers.GetTimer("Gnuplot")->end();
 
 	int cur = 0, next = 1;
-
 	//MyTimers.GetTimer("RandomIni")->start();
 	RandomInitialization(&pop[cur], problem);
 	//MyTimers.GetTimer("RandomIni")->end();
@@ -128,10 +129,29 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 		//}
 		if (problem.EvaluateOldEncoding(&pop[cur][i]))//pure evaluate
 		{
+			//cout << "in SOA" << endl;
+			pop[cur][i].e_up().resize(pop[cur][i].routes().size());
+			pop[cur][i].e_down().resize(pop[cur][i].routes().size());
+			size_t s = 0, e = 0;
+			for (int v = 1; v < pop[cur][i].routes().size(); v++)
+			{
+				if (pop[cur][i].routes()[v] == problem.depot())
+				{
+					//cout << "\nv = " << v << endl;
+					e = v; 
+					//IniE(&pop[cur][i], problem, s, e);
+					//SOA(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+					s = e; // 換下一條route
+				}
+			}
+			
+			//cout << "out SOA" << endl;
 			cnt++;
+			//cout << "EVAAAA " << endl;
 
 		}
 		total_evaluate++;
+		//cout << "total eva = " <<total_evaluate << endl;
 		//MyTimers.GetTimer("DPEvaluate")->end();
 
 	}
