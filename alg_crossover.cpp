@@ -265,15 +265,20 @@ bool COrderedCrossover::operator()(CIndividual *child1, CIndividual *child2, con
  // ----------------------------------------------------------------------------------
 bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child2, const CIndividual &parent1, const CIndividual &parent2, double cr) const
 {
-	const size_t Depot = parent1.vars()[0];
-
+	//const size_t Depot = parent1.vars()[0]; // 現在沒depot在x
+	//std::cout << "in LOX" << endl;
 	if (MathAux::random(0.0, 1.0) > cr) return false; // not crossovered
 
+	child1->speed().resize(parent1.speed().size());
+	child2->speed().resize(parent2.speed().size());
 	CIndividual::TDecVec *children[] = { &child1->vars(), &child2->vars() };
+	CIndividual::TObjVec *c_speeds[] = { &child1->speed(), &child2->speed() };
 	const CIndividual::TDecVec *parents[] = { &parent1.vars(), &parent2.vars() };
 
 	for (size_t c = 0; c < 2; c += 1)
 	{
+		children[c]->resize(parents[c]->size());
+		
 		size_t cut1 = rand() % children[c]->size(), cut2 = rand() % children[c]->size();
 		if (cut1 > cut2) swap(cut1, cut2);
 
@@ -283,33 +288,38 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 		for (size_t i = cut1; i <= cut2; i += 1) // keep the enclosed section
 		{
 			(*children[c])[i] = (*parents[father])[i];
+			(*c_speeds[c])[i] = parent1.speed()[i];
 			exists.insert((*children[c])[i]);
 		}
-
+		//std::cout << "insert OK" << endl;
 		size_t c_pos = 0, m_pos = c_pos; //Linear  c_pos -> 1 from head to tail 
 		size_t mother = !c;
-
+		//std::cout << "cut1 = " << cut1 << endl;
 		while (c_pos < cut1) //前半
 		{
 			while (exists.count((*parents[mother])[m_pos]) > 0) m_pos = (m_pos + 1) % parents[mother]->size();
 
 			(*children[c])[c_pos] = (*parents[mother])[m_pos];
+			(*c_speeds[c])[c_pos] = parent2.speed()[m_pos];
 			exists.insert((*children[c])[c_pos]);
 
 			c_pos = c_pos + 1;
+			//std::cout << "c_pos = " << c_pos << endl;
 		}
-		
+		//std::cout << "front OK" << endl;
 		c_pos = cut2 + 1;
 		while (c_pos < children[c]->size()) //後半
 		{
 			while (exists.count((*parents[mother])[m_pos]) > 0) m_pos = (m_pos + 1) % parents[mother]->size();
 
 			(*children[c])[c_pos] = (*parents[mother])[m_pos];
+			(*c_speeds[c])[c_pos] = parent2.speed()[m_pos];
 			exists.insert((*children[c])[c_pos]);
 
 			c_pos = c_pos + 1;
 		}
-		swap((*children[c])[0], *find(children[c]->begin(), children[c]->end(), Depot));
+		//std::cout << "back OK" << endl;
+		//swap((*children[c])[0], *find(children[c]->begin(), children[c]->end(), Depot));
 	}// for - children 0 and 1
 	/*for (size_t c = 0; c < 2; c += 1)
 	{
@@ -320,6 +330,7 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 		cout << endl;
 	}
 	system("pause");*/
+	//std::cout << "finish LOX" << endl;
 	return true;
 
 }// COrderedCrossover::operator()

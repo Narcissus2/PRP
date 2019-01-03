@@ -33,7 +33,7 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	for (int i = 0; i < num_node_; i++)
 	{
 		vector <double> dis_one_array;
-		for (int j = 0; j < num_node_;j++)
+		for (int j = 0; j < num_node_; j++)
 		{
 			double tmp_dis;
 			ifile >> tmp_dis;
@@ -45,11 +45,11 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	//print distance board
 	/*for (int i = 0; i < distance_.size(); i++)
 	{
-		for (int j = 0; j < distance_[i].size(); j++)
-		{
-			cout << distance_[i][j] << " ";
-		}
-		cout << endl;
+	for (int j = 0; j < distance_[i].size(); j++)
+	{
+	cout << distance_[i][j] << " ";
+	}
+	cout << endl;
 	}*/
 
 	// time window
@@ -69,7 +69,7 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	// ----- output the map information -----
 	/*for (int i = 0; i < num_node_; i++)
 	{
-		cout << node_[i].number << " " << node_[i].name << " " << node_[i].demand << " " << node_[i].ready_time << " " << node_[i].due_time << " " << node_[i].service_time << endl;
+	cout << node_[i].number << " " << node_[i].name << " " << node_[i].demand << " " << node_[i].ready_time << " " << node_[i].due_time << " " << node_[i].service_time << endl;
 	}*/
 
 	//num_vars_ = num_node_; //我不知道這有什麼意思..
@@ -77,7 +77,7 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	// fc * 油耗(L)就是 fuel cost, fd * 工時(H) 就是 driver cost
 	fc_ = 1.4;
 	fd_ = 8;
-
+	want_speed_ = 25;// 90 km/h = 25 m/s
 	cout << "Problem set ------- OK" << endl;
 	//cout << "Please Enter to continue..." << endl;  getchar();
 
@@ -302,471 +302,290 @@ bool CProblemSelf::EvaluateDpCar(CIndividual *indv) const
 }
 // -----------------------------------------------------------
 
-bool CProblemSelf::Dp2Object(CIndividual *indv, double obj1_rate) const
+bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 {
 	const BProblem &prob = *this;
-	const double obj1 = obj1_rate, obj2 = 1 - obj1;
-	const int weight_punishment = 1e8;
+	const double obj1 = obj1_rate/100, obj2 = 1 - obj1;
+	//const int weight_punishment = 1e8; //目前還不知道要不要用懲罰，懲罰多少?
+	const double inf_value = 1e9;
+	const double inf_load_fuel = 1e6;
+	const double inf_load_time = 1e6;
 
 	const CIndividual::TDecVec &x = indv->vars();
 	const vector<Node> & n = prob.node();
-
-	bool success = false;
-	while (!success)
+	const CIndividual::TObjVec &speeds = indv->speed();
+	
+	indv->routes() = x; // 把x 先塞進routes
+	/*cout << "in PRP" << endl;
+	cout << *indv << endl;
+	indv->ShowRoute();*/
+	//cout << "max load = " << prob.maxload() << endl;
+	// 計算各段的fuel consumed, 表格是 0-X-0 的油耗
+	// 要有距離、載重、速度
+	// 速度要一段一段乘
+	vector<vector<double>> fuel_board;
+	for (size_t i = 0; i < prob.num_node() - 1; i++)
 	{
-		//there is no depot  -- initial dis_board = 0.0
-		vector <vector<double>> dis_board;
-		for (size_t i = 0; i < prob.num_node() - 1; i++)
+		double temp_load = n[x[i]].demand;
+		fuel_board.push_back(vector<double>());
+		for (size_t j = 0; j < prob.num_node() - 1; j++)
 		{
-			dis_board.push_back(vector<double>());
-			for (size_t j = 0; j < prob.num_node() - 1; j++)
+			if (i <= j)
 			{
-				dis_board[i].push_back(0.0);
-			}
-		}
-		//1~num_node-1 , no depot  --- calculate dis_board
-		/************************************************************************************
-		dis_board 只有客戶點，所以0~num_node-1，dis_board[0][0]指的昰 (倉庫->客戶第一個->倉庫) 的距離
-		超越載重就會用 weight_punishment = 1e8 來破壞解
-		dis_board[i][j]的意思就是 (倉庫 -> i客戶 -> ...(依序) -> j客戶 -> 倉庫) 的距離
-		*************************************************************************************/
-		for (size_t i = 0; i<prob.num_node() - 1; i++)
-		{
-			bool overload = false;
-			double dis_temp = 2 * distance_[x[i + 1] - 1][prob.depot() - 1], //Ex. 0-1-0,0-2-0
-				load = n[x[i + 1] - 1].demand;
-			//cout << "demand 1 " << n[x[i + 1] - 1].demand << endl;
-			dis_board[i][i] = dis_temp;
-			//cout << "dis_board[" << i << "][" << i << "] = " << dis_temp << endl;
-			for (size_t j = i + 1; j < prob.num_node() - 1; j++)
-			{
-				if (overload)
+				if (i != j) temp_load += n[x[j]].demand;
+				if (temp_load > prob.maxload())
 				{
-					dis_board[i][j] = weight_punishment;
-					continue;
-				}
-				load += n[x[j + 1] - 1].demand;
-				if (load > prob.maxload())
-				{
-					dis_temp = weight_punishment;
-					overload = true;
-				}
-				dis_temp += distance_[x[j + 1] - 1][x[j] - 1]; //0-1-0+1-2
-															   //cout << "+" << sqrt(pow(n[x[j + 1] - 1].x - n[x[j] - 1].x, 2) + pow(n[x[j + 1] - 1].y - n[x[j] - 1].y, 2)) << endl;
-				dis_temp -= distance_[x[j] - 1][prob.depot() - 1];//0-1+1-2 = 0-1-2
-																  //cout << "-" << sqrt(pow(n[x[j] - 1].x - n[prob.depot() - 1].x, 2) + pow(n[x[j] - 1].y - n[prob.depot() - 1].y, 2)) << endl;
-				dis_temp += distance_[x[j + 1] - 1][prob.depot() - 1]; //0-1-2-0
-																	   //cout << "+" << sqrt(pow(n[x[j + 1] - 1].x - n[prob.depot() - 1].x, 2) + pow(n[x[j + 1] - 1].y - n[prob.depot() - 1].y, 2)) << endl;
-				dis_board[i][j] = dis_temp;
-			}
-		}
-		//計算emission board
-		//initial emission board = 0.0
-		vector<vector<double>> emission_board;
-		for (size_t i = 0; i < prob.num_node(); i++)
-		{
-			emission_board.push_back(vector<double>());
-			for (size_t j = 0; j < prob.num_node() - 1; j++)
-			{
-				emission_board[i].push_back(0.0);
-			}
-		}
-		//caculate emission 
-		for (size_t i = 0; i<prob.num_node() - 1; i++)
-		{
-			double emi_temp = m_ * ((FCR_full_ - FCR_empty_) * n[x[i + 1] - 1].demand / maxload_ + FCR_empty_) * distance_[x[i + 1] - 1][prob.depot() - 1],
-				load_now = n[x[i + 1] - 1].demand,
-				dis_temp = distance_[x[i + 1] - 1][prob.depot() - 1];
-			//dis_board[i][i] = dis_temp;
-			emission_board[i][i] = emi_temp;
-			//cout << "dis_board[" << i << "][" << i << "] = " << dis_temp << endl;
-			for (size_t j = i + 1; j < prob.num_node() - 1; j++)
-			{
-				if (dis_board[i][j] == weight_punishment)
-				{
-					emission_board[i][j] = weight_punishment;
-					continue;
-				}
-				load_now += n[x[j + 1] - 1].demand;
-				
-				dis_temp += distance_[x[j + 1] - 1][x[j] - 1]; //0-1-0+1-2
-															   //cout << "+" << sqrt(pow(n[x[j + 1] - 1].x - n[x[j] - 1].x, 2) + pow(n[x[j + 1] - 1].y - n[x[j] - 1].y, 2)) << endl;
-				emi_temp = m_ * ((FCR_full_ - FCR_empty_) * load_now / maxload_ + FCR_empty_) * dis_temp;
-				emission_board[i][j] = emi_temp;
-			}
-		}
-
-		//DP calculate good cut point
-		/*
-		dp[i][j] 的意思是到點i用j+1台車的最短距離，i=0是倉庫，dp[0][j] = 0
-		j表示了貨車數量，所以不需要car來存幾台車了
-		*/
-		vector<vector<double>> dp; //2維DP 
-								   //initial dp  = 0.0---------------------------------------------
-		for (size_t i = 0; i < prob.num_node(); i++)
-		{
-			dp.push_back(vector<double>());
-			for (size_t j = 0; j < prob.num_vehicles() + 2; j++)
-			{
-				if (j == 0) {
-					if (i == 0) {
-						dp[i].push_back(0.0);
-					}
-					else dp[i].push_back(dis_board[0][i - 1]);
-					
-				}
-				else dp[i].push_back(0.0);
-			}
-		}
-		//--------------------------------------------------------
-		//cout << "dp 初始化完成" << endl;
-		vector<vector<size_t>> cut_point;
-		for (size_t i = 0; i < prob.num_node(); i++)
-		{
-			cut_point.push_back(vector<size_t>());
-		}
-		//改成while(!feasible ||ｔ<= k)
-		size_t car = 1; 
-		bool feasible = false;
-		while (!feasible || car <= prob.num_vehicles()-1)
-		{
-			//car = 1 其實在算2台車
-			feasible = false;
-			//cout << "現在用" << car << "台車" << endl;
-			for (size_t i = 1; i < prob.num_node(); i += 1) //num_node is num of points
-			{
-				//dp[i] = dp[i-1] + dis_board[i - 1][i - 1];
-				double min_value = obj1 * dis_board[0][i - 1] + obj2 * emission_board[0][i - 1]; //第一次是 = 0-1-0(原本有+dp[0]可是dp[0]就always是0)
-				//double min_value = dis_board[0][i - 1] ; //第一次是 = 0-1-0(原本有+dp[0]可是dp[0]就always是0)
-
-				if (dis_board[0][i - 1] >= weight_punishment)
-				{
-					min_value = weight_punishment;
-				}
-				//cout << "ori min value = " << min_value << endl;;
-				size_t cut = 0;
-
-				for (size_t j = 1; j < i; j++)
-				{
-					//printf("dis_board[%d][%d] = %.2f\n", j, i - 1, dis_board[j][i - 1]);
-					if (dis_board[j][i - 1] >= weight_punishment*0.1) {
-						/*cout << "punish !!" << endl;
-						printf("%f > %d ?\n", dis_board[j][i - 1], weight_punishment);*/
-						continue;
-					}
-					if (dp[j][car - 1] >= weight_punishment*0.1)
-					{
-						continue;
-					}
-					
-					if (dp[j][car - 1] + obj1 * dis_board[j][i - 1] + obj2 *emission_board[j][i - 1] < min_value)//&& (car[j] + 1 <= prob.num_vehicles())) 
-					//if (dp[j][car - 1] + dis_board[j][i - 1]  < min_value)//&& (car[j] + 1 <= prob.num_vehicles())) 
-					{
-						min_value = dp[j][car - 1] + dis_board[j][i - 1] + obj2 * emission_board[j][i - 1];
-						//min_value = dp[j][car - 1] + [dis_board[j][i - 1] ;
-						/*printf("dp[%d][%d] = %.2f\n", j, car-1, dp[j][car - 1]);
-						printf("dis_board[%d][%d] = %.2f\n", j, i - 1, dis_board[j][i - 1]);
-						cout << "in min_value = " << min_value << endl;*/
-						cut = j;
-						//cut is the end of one car 
-					}
-				}
-				if (min_value >= weight_punishment)
-				{
-					dp[i][car] = weight_punishment;	
+					fuel_board[i].push_back(Calculate_fuel(indv, i, j) + inf_load_fuel);
 				}
 				else
 				{
-					dp[i][car] = min_value;
+					//cout << "fuel = " << Calculate_fuel(indv, i, j) << endl;
+					fuel_board[i].push_back(Calculate_fuel(indv, i, j));
 				}
-				/*cout << "min v = " << min_value << endl;
-				printf("cut dp[%d][%d] = %.2f\n", cut, car-1, dp[cut][car-1]);
-				printf("dp[%d][%d] = %.2f\n", i, car, min_value);*/
-				if (min_value > 2e5 && min_value < weight_punishment) getchar();
-				//cout << "cut = " << cut << endl;
-				//getchar();
-				cut_point[i].push_back(cut);
-				/*if (car == prob.num_vehicles()-1)
-				{
-					for (int k = 0; k < cut_point[i].size(); k++) {
-					printf("cut_point[%d][%d] = %d\n", i,k, cut_point[i][k]);
-					}
-				}*/
-				
-				
 			}
-			//getchar();
-			if (dp[prob.num_node() - 1][car]< weight_punishment)
+			else
 			{
-				//printf("dp[%d][%d] = %lf\n", prob.num_node() - 1, car, dp[prob.num_node() - 1][car]);
-				if (car >= prob.num_vehicles()-1) {
-					feasible = true;
-					break;
+				fuel_board[i].push_back(inf_value);
+			}
+		}
+	}
+
+	/*cout << "fuel board :" << endl;
+	for (int i = 0; i<fuel_board.size(); i++)
+	{
+		for (int j = 0; j<fuel_board.size(); j++)
+		{
+			cout << fuel_board[i][j] << ' ';
+		}
+		cout << endl;
+	}*/
+
+	// --- 計算各段的time 
+	// --- initial time_board ---  
+	vector<vector<double>> time_board;
+	for (size_t i = 0; i < prob.num_node() - 1; i++)
+	{
+		time_board.push_back(vector<double>());
+		double temp_load = n[x[i]].demand;
+		for (size_t j = 0; j < prob.num_node() - 1; j++)
+		{
+			if (j >= i)
+			{
+				if (i != j) temp_load += n[x[j]].demand;
+				if (temp_load > prob.maxload())
+				{
+					time_board[i].push_back(Calculate_time(indv, i, j) + inf_load_time);
+				}
+				else
+				{
+					time_board[i].push_back(Calculate_time(indv, i, j));
 				}
 			}
-			car++;
-		}
-		//cout << "car = " << car << endl;
-		indv->set_num_vehicles(car+1);
-		car -= 1;//car 從0開始就是用1台車所以要-1
-		vector <size_t> new_cut_point;
-		//size_t now_index = prob.num_node() - 1, car = prob.num_vehicles() - 2;//0607改
-		size_t now_index = prob.num_node() - 1;
-
-		while (1)
-		{
-			/*printf("now_index = %d\n", now_index);
-			printf("car = %d\n", car);
-			printf("cut_point[%d][%d] = %d\n", now_index, car, cut_point[now_index][car]);*/
-			if (cut_point[now_index][car] == 0) {
-				//getchar();
-				break;
+			else
+			{
+				time_board[i].push_back(inf_value);
 			}
-			new_cut_point.push_back(cut_point[now_index][car]);
-			now_index = cut_point[now_index][car];
-			if (car == 0) {
-				//getchar();
-				break;
-			}
-			car--;
 		}
-		//cout << "new cut size = " << new_cut_point.size() << endl;
-		success = true;
-
-
-		//插入倉庫到正確位置
-		CIndividual::TDecVec &routes = indv->routes();
-		routes = x;
-
-		for (size_t i = 0; i < new_cut_point.size(); i++)
-		{
-			routes.insert(routes.begin() + new_cut_point[i] + 1, prob.depot());
-		}
-		routes.push_back(prob.depot());
-
 	}
+
+	/*cout << "time board :" << endl;
+	for (int i = 0; i<time_board.size(); i++)
+	{
+	for (int j = 0; j<time_board.size(); j++)
+	{
+	cout << time_board[i][j] << ' ';
+	}
+	cout << endl;
+	}*/
+	//getchar();
+	// DP ------------------------------------ up
+	// initial 
+	vector<double> dp; //1維DP 
+	vector<vector<int>> cut_point;
+					   //initial dp  = 0.0---------------------------------------------
+	dp.push_back(obj1 * fuel_board[0][0] + obj2 * time_board[0][0]);
+	cut_point.push_back(vector<int>());
+	/*cout << "obj1 = " << obj1 << endl;
+	cout << "obj2 = " << obj2 << endl;
+	cout << "f 0 0 = " << fuel_board[0][0] << endl;
+	cout << "t 0 0 = " << time_board[0][0] << endl;
+	cout << "dp 0 = " << dp[0] << endl;*/
+	for (size_t i = 1; i < prob.num_node()-1; i++)
+	{
+		double dp_value = obj1 * fuel_board[0][i] + obj2 * time_board[0][i];
+		cut_point.push_back(vector<int>());
+		vector<int> tmp_cut;
+		bool cut_check = false;
+		//cout << "i = " << i << endl;
+		//cout << "cut size = " << cut_point.size() << endl;
+		for (size_t j = 0; j < i; j++)
+		{
+			//cout << "j = " << j << endl;
+			double temp_value = dp[i - j - 1] + obj1 * fuel_board[i - j][i] + obj2 * time_board[i - j][i];
+			if (temp_value < dp_value)
+			{
+				//cout << "dp = " << dp_value << ' ' << "temp = " << temp_value << endl;
+				dp_value = temp_value;
+				if (cut_point[i - j - 1].size())
+				{
+					tmp_cut = cut_point[i - j - 1];
+					//cout << "tmp cut = ";
+					/*for (int k = 0; k < tmp_cut.size(); k++)
+					{
+						cout << tmp_cut[k] << ' ';
+					}
+					cout << endl;*/
+				}
+				else
+				{
+					tmp_cut.resize(0);
+				}
+				tmp_cut.push_back(i - j - 1);
+				//cout << "new cut = " << i - j - 1 << endl;
+				cut_check = true;
+			}
+		}
+		if (tmp_cut.size())
+		{
+			cut_point[i] = tmp_cut;
+		}
+		
+		dp.push_back(dp_value);
+	}
+	/*cout << "cut point : " << endl;
+	for (int j = 0; j < cut_point.size(); j++)
+	{
+		cout << "cutpoint[" << j << "]: ";
+		for (int i = 0; i < cut_point[j].size(); i++)
+		{
+			cout << cut_point[j][i] << ' ';
+		}
+		cout << endl;
+	}
+	getchar();*/
+
+	/*cout << "cutpoint[]: ";
+	for (int i = 0; i < cut_point[cut_point.size()-1].size(); i++)
+	{
+		cout << cut_point[cut_point.size() - 1][i] << ' ';
+	}
+	cout << endl; getchar();*/
+	/*cout << "dp board : " << endl;
+	for (int i = 0; i<dp.size(); i++)
+	{
+		cout << "dp[" << i << "] = " << dp[i] << endl;
+	}
+	cout << endl; getchar();*/
+	// DP ------------------------------------ down
+	// 插入倉庫
+	CIndividual::TDecVec &routes = indv->routes();
+	routes.insert(routes.begin(),depot());
+	for (int i = 0; i < cut_point[cut_point.size() - 1].size(); i++)
+	{
+		routes.insert(routes.begin() + cut_point[cut_point.size() - 1][i] + 1 + i + 1, prob.depot());
+	}
+	routes.push_back(depot());
+
+	while (indv->speed().size() < routes.size() - 1)//把speed 補好
+	{
+		indv->speed().push_back(want_speed());
+	}
+
+	for (int i = 0; i < indv->speed().size(); i++) // 速度都設定成 avg speed
+	{
+		if (indv->speed()[i] == 0)
+		{
+			indv->speed()[i] = want_speed();
+		}
+	}
+	
+	//indv->ShowRoute();
+	//getchar();
 	return this->EvaluateOldEncoding(indv);
 }
 // -----------------------------------------------------------
-
-//bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate, const double max_fuel, const double max_time) const
-//{
-//	const BProblem &prob = *this;
-//	const double obj1 = obj1_rate, obj2 = 1 - obj1;
-//	// const int weight_punishment = 1e8; //目前還不知道要不要用懲罰，懲罰多少?
-//
-//	const CIndividual::TDecVec &x = indv->vars();
-//	const vector<Node> & n = prob.node();
-//	const CIndividual::TObjVec &speeds = indv->speed();
-//
-//	// 計算各段的fuel consumed, 表格是 0-X-0 的油耗
-//	// 要有距離、載重、速度
-//	// 速度要一段一段乘
-//	vector<vector<double>> fuel_board;
-//	for (size_t i = 0; i < prob.num_node() - 1; i++)
-//	{
-//		fuel_board.push_back(vector<double>());
-//		for (size_t j = 0; j < prob.num_node() - 1; j++)
-//		{
-//			fuel_board[i].push_back(0.0);
-//		}
-//	}
-//
-//
-//	// --- 計算各段的time 
-//	
-//	// --- initial time_board ---  
-//	vector<vector<double>> time_board;
-//	for (size_t i = 0; i < prob.num_node() - 1; i++)
-//	{
-//		time_board.push_back(vector<double>());
-//		for (size_t j = 0; j < prob.num_node() - 1; j++)
-//		{
-//			time_board[i].push_back(0.0);
-//		}
-//	}
-//	// --- calculate time_board --- XXXX
-//	size_t next_index = 0, now_index = 0;
-//	double time_tmp = 0.0;
-//
-//	for (size_t i = 0; i<x.size(); i++)
-//	{
-//		for (size_t j = i; j < x.size(); j++)
-//		{
-//
-//		}
-//		if (routes[i] == depot())
-//		{
-//			time_tmp += start_time_;
-//			//cout << "depot = " << i << endl;
-//			next_index = i;
-//			int wait_time = 0;
-//			for (size_t j = now_index; j<next_index; j++)
-//			{
-//				// ---- calculate waiting time -----
-//
-//				if (f[1] < node_[routes[j]].ready_time)
-//				{
-//					wait_time = node_[routes[j]].ready_time - f[1];
-//				}
-//				else wait_time = 0;
-//
-//				// ---- calculate total time -----
-//				//f[1] += wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / (speed[j]*1000/3600);
-//				f[1] += wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / (speed[j]);
-//				//if (total_distance > 646 && total_distance < 648)
-//				//{
-//				//	cout << "route = " << routes[j] << " " << routes[j + 1] << endl;
-//				//	cout << "wait time = " << wait_time << endl;
-//				//	cout << "service time = " << node_[routes[j]].service_time << endl;
-//				//	cout << "dis = " << distance_[routes[j]][routes[j + 1]] << endl;
-//				//	cout << "speed = " << speed[j] << endl;
-//				//	cout << "walk time = " << (double)distance_[routes[j]][routes[j + 1]] / (speed[j]) << endl;
-//				//	cout << "f[1] += " << wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / speed[j] << " = " << f[1] << endl;
-//				//	cout << "time = " << f[1] << endl; //getchar(); 
-//				//}
-//
-//			}
-//			f[1] -= start_time_;
-//			//cout << "final f[1] = " << f[1] << endl;
-//			now_index = next_index;
-//		}
-//	}
-//
-//
-//	// DP 
-//
-//	// 插入倉庫
-//
-//	return this->EvaluateOldEncoding(indv);
-//}
-// -----------------------------------------------------------
-double CProblemSelf::Calculate_distance(const CIndividual::TDecVec &routes,int s,int e) const
+double CProblemSelf::Calculate_distance(const CIndividual::TDecVec &routes, int s, int e) const
 {
-	//計算一條route的距離,s,e不包含倉庫點
+	//計算一條route的距離,s,e不包含倉庫點, 目前只有可能拿來算完整情況,所以就不用x了
 	double distance = distance_[depot_section_][routes[s]] + distance_[routes[e]][depot_section_];
+	//cout << "d->s = " << distance_[depot_section_][routes[s]] << endl;
+	//cout << "e->d = " << distance_[routes[e]][depot_section_] << endl;
 	for (int i = s; i < e; i++)
 	{
+		//cout << routes[i] << "-" << routes[i+1] << "=" <<  distance_[routes[i]][routes[i + 1]] << endl;
 		distance += distance_[routes[i]][routes[i + 1]];
 	}
+	//cout << "dis = " << distance << endl;
 	return distance; // 直接回傳是 公尺(m)
 }
 // -----------------------------------------------------------
-double CProblemSelf::Calculate_time(const CIndividual *indv, int s, int e) const
+double CProblemSelf::Calculate_time(CIndividual *indv, int s, int e) const
 {
+	// ----- object 2 (driving time): total using time ------
+	/*************************************************************************
+	minimize total sj
+	sj = cj + tj + dj0/vr
+	簡單來說就是所有時間都要算進去 = 回倉庫時間 - 倉庫出發時間
+	*************************************************************************/
 	//計算一條route的時間,s,e不包含倉庫點
-	const CIndividual::TDecVec &routes = indv->routes();
+	const CIndividual::TDecVec &x = indv->vars();
 	const CIndividual::TObjVec &speed = indv->speed();
-	double time = distance_[depot_section_][routes[s]]/speed[s-1] ;
+	double speed_now = speed[0];
+	double time = distance_[depot_section_][x[s]] / speed_now;
+	/*cout << "start dis = " << distance_[depot_section_][x[s]] << endl;
+	cout << "start speed = " << speed_now << endl;
+	cout << "start -> " << time << endl;*/
 	for (int i = s; i <= e; i++)
 	{
 		// ---- check time window----- too early 
+		//cout << "i = " << i << endl;
 		double wait_time = 0;
-		if (time < node_[routes[i]].ready_time) 
+		if (time < node_[x[i]].ready_time)
 		{
-			wait_time = node_[routes[i]].ready_time - time;
+			wait_time = node_[x[i]].ready_time - time;
 		}
-		else if (time > node_[routes[i]].due_time)
+		else if (time > node_[x[i]].due_time)
 		{
-			//wait_time = 1e7;
-			/*cout << "routes i  = " << routes[i] << endl;
-			cout << "ar time = " << time << endl;
-			cout << "invalid time !!" << endl;  getchar();*/
+			wait_time = time_punishment_;
+			indv->set_feasible(false);
+			//cout << "invalid time !!" << endl;  //getchar();
 		}
 		else wait_time = 0;
 
-		double s_time = node_[routes[i]].service_time, // service time
-			walk_time = distance_[routes[i]][routes[i + 1]] / speed[i];
-				
+		speed_now = speed[0];
+		double s_time = node_[x[i]].service_time, // service time
+			walk_time; // 行駛時間
+
+		if (i < e)
+		{
+			walk_time = distance_[x[i]][x[i + 1]] / speed_now;
+		}
+		else // i == e
+		{
+			walk_time = distance_[x[i]][depot_section_] / speed_now;
+		}
+		/*cout << "w time = " << walk_time << endl;
+		cout << "s time = " << s_time << endl;*/
 		// ---- total time = waiting time + service time + walk time -----
-		//time += wait_time + node_[routes[i]].service_time + distance_[routes[i]][routes[i + 1]] / (speed[i]*1000/3600);
+		//time += wait_time + node_[x[i]].service_time + distance_[x[i]][x[i + 1]] / (speed[i]*1000/3600);
 		time += wait_time + s_time + walk_time;
-		//cout << "~~time == " << time << endl;
+		//cout << "this time = " << time << endl; getchar();
+
 	}
 	if (time > node_[depot_section_].due_time)
 	{
-		//cout << "depot ar time = " << time << endl;
-		cout << "invalid time !!" << endl;  getchar();
+		time += time_punishment_;
+		indv->set_feasible(false);
+		//cout << "invalid time !!" << endl; // getchar();
 	}
 	time -= start_time_; // 這不算在我服務的時間
-	//cout << "time = " << time << endl;
+
+						 //cout << "time = " << time << endl; getchar();
 	return time; // 直接回傳是 秒(s)
 }
 // -----------------------------------------------------------
-
-
-bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
+double CProblemSelf::Calculate_fuel(const CIndividual *indv, int s, int e) const
 {
-	// ----- initial setting ------
-	const CIndividual::TDecVec &routes = indv->routes();
-	const CIndividual::TDecVec &x = indv->vars();
-	const CIndividual::TObjVec &speed = indv->speed();
-	CIndividual::TObjVec &f = indv->objs();
-	const double infeasible_value = 1e8;
-
-	// ----- Check if solution is valid. -----
-	vector <bool> check_gene;
-	check_gene.resize(routes.size(), false);
-	bool continous_depot = false;
-	double load_check = 0.0;
-	int vehicle_num = 0;
-	//cout << "\nEva :\n";
-	for (size_t i = 0; i<routes.size(); i++)
-	{
-		//cout << "x[i] = " << x[i] << endl;
-		if (routes[i] == depot()) {
-			//cout << "1" << endl;
-			vehicle_num++;
-			load_check = 0;
-			if (continous_depot)
-			{
-				f[0] = infeasible_value;
-				f[1] = infeasible_value;
-				cout << "routes = " << routes[i - 1] << ' ' << routes[i] << endl;
-				cout << "continous Invalid !" << endl;
-				cout << "Please Enter to continue ... " << endl; getchar();
-				return false;
-			}
-			continous_depot = true;
-		}
-		else if (check_gene[routes[i]])
-		{
-			//cout << "2" << endl;
-			f[0] = infeasible_value;
-			f[1] = infeasible_value;
-			cout << "same customers Invalid !" << endl;
-			cout << "Please Enter to continue ... " << endl; getchar();
-			return false;
-		}
-		else
-		{
-			//cout << "3" << endl;
-			load_check += node_[routes[i]].demand;
-			//cout << "load = " << load_check << endl;
-			if (load_check > maxload_)
-			{
-				f[0] = infeasible_value;
-				f[1] = infeasible_value;
-				cout << "load Invalid !" << endl;
-				cout << "Please Enter to continue ... " << endl; getchar();
-				return false;
-			}
-			check_gene[routes[i]] = true;
-			continous_depot = false;
-		}
-	}
-	// ----- set the vehicle num -----
-	indv->set_num_vehicles(vehicle_num - 1);
-
-	//cout << "vnum = " << indv->num_vehicles() << endl; getchar();
-	//cout << "EVA 2" << endl; getchar();
-
-	// You can define your own problem here.
-
-	//int limit_vehicles = (int)indv->num_vehicles() - (int)this->num_vehicles(); //現在沒有車輛限制
-	//f[0] = max((int)indv->num_vehicles() - (int)this->num_vehicles(), static_cast<size_t>(0))*5e3;
-	//f[0] = max(limit_vehicles, static_cast<int>(0))*5e3; //現在沒有車輛限制
-
 	// ----- object 1 (fuel consumed) : total fuel (version 2)-----
 	/*************************************************************************
 	Objective 1-1
@@ -839,152 +658,170 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 	其中也會紀錄下total distance
 	*************************************************************************/
 	//cout << "Obj1 version 2" << endl;
-	double next_posx, next_posy,
-		now_pos = depot_section_, next_pos; //現在不是從1開始，都是從0開始(depot_section)
-	//vector <double> v_dis; //用在object 2 (每段距離)
-	double total_distance = 0.0,now_load = 0;
-
-	for (size_t i = 1; i<routes.size(); i++)
+	//計算一條route的油耗,s,e不包含倉庫點
+	const CIndividual::TDecVec &x = indv->vars();
+	const CIndividual::TDecVec &routes = indv->routes();
+	const CIndividual::TObjVec &speed = indv->speed();
+	double fuel = 0.0, load = 0.0;
+	// 初始化發車時的載重
+	for (int i = s; i <= e; i++)
 	{
-		//cout << "i = " << i << endl;
-		next_pos = routes[i];
-		if (now_pos == depot_section_)
-		{
-			//cout << "in" << endl;
-			int tmp = i;
-			//now_load = 0;
-			// ----- 計算這台車出發時的載重 -----
-			while (routes[tmp] != depot_section_)
-			{
-				//cout << "x[" << tmp << "] = " << x[tmp] << endl;
-				//cout << "d = " << node_[x[tmp]].demand << endl;
-				now_load += node_[routes[tmp]].demand;
-				tmp++;
-			}
-			//cout << "load = " << now_load << endl;
-		}
-		//double dis = distance_[now_pos][next_pos]/1000;//因為他是給公尺，所以應該要/1000吧
-		double dis = distance_[now_pos][next_pos];
-		f[0] += 0.00003083 * (33 + 1.73088843 * speed[now_pos] + 0.00027250218 * now_load * speed[now_pos] + 0.004579630303416 * speed[now_pos] * speed[now_pos] * speed[now_pos]) * (dis) / speed[now_pos];
-		//f[0] += 0.00003083 * (33 + 1.73088843 * (speed[now_pos] * 3600 / 1000) + 0.00027250218 * now_load * (speed[now_pos] * 3600 / 1000) + 0.004579630303416 * (speed[now_pos] * 3600 / 1000)* (speed[now_pos] * 3600 / 1000)* (speed[now_pos] * 3600 / 1000)) * (dis) / (speed[now_pos] * 3600 / 1000);
-		total_distance += dis/1000;//因為他是給公尺，所以應該要/1000吧
-		//cout << "f0 - " << i << " = " << f[0] << endl;
-		now_load -= node_[next_pos].demand;
-		//cout << "nowload -= " << node_[next_pos].demand << " = " << now_load << endl;
-		now_pos = next_pos;
+		load += node_[x[i]].demand;
 	}
-	indv->set_total_dis(total_distance);
-	//cout << "total dis = " << total_distance << endl;
+	// 倉庫出發
+	double speed_now = speed[0];
+	fuel = 0.00003083 * (33 + 1.73088843 * speed_now + 0.00027250218 * load * speed_now + 0.004579630303416 * speed_now * speed_now * speed_now) * (distance_[depot_section_][x[s]]) / speed_now;
+	for (int i = s; i < e; i++)
+	{
+		speed_now = speed[0];
+		load -= node_[x[i]].demand;
+		// speed 單位= m/s
+		fuel += 0.00003083 * (33 + 1.73088843 * speed_now + 0.00027250218 * load * speed_now + 0.004579630303416 * speed_now * speed_now * speed_now) * (distance_[x[i]][x[i + 1]]) / speed_now;
+		/*cout << "speed = " << speed_now << endl;
+		cout << "fuel = " << fuel << endl;*/
+		// speed 單位 = km/h
+		//f[0] += 0.00003083 * (33 + 1.73088843 * (speed[now_pos] * 3600 / 1000) + 0.00027250218 * now_load * (speed[now_pos] * 3600 / 1000) + 0.004579630303416 * (speed[now_pos] * 3600 / 1000)* (speed[now_pos] * 3600 / 1000)* (speed[now_pos] * 3600 / 1000)) * (dis) / (speed[now_pos] * 3600 / 1000);
+	}
+	speed_now = speed[0];
+	load -= node_[x[e]].demand;
+	fuel += 0.00003083 * (33 + 1.73088843 * speed_now + 0.00027250218 * load * speed_now + 0.004579630303416 * speed_now * speed_now * speed_now) * (distance_[x[e]][depot_section_]) / speed_now;
+	//cout << "fuel = " << fuel << endl;
+	return fuel; // 直接回傳是 公升(L) ?
+}
+// -----------------------------------------------------------
 
-	/*double test_dis = 0.0;
-	int index_one = 1, index_two = 1;
+bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
+{
+	// ----- initial setting ------
+	const CIndividual::TDecVec &routes = indv->routes();
+	const CIndividual::TDecVec &x = indv->vars();
+	const CIndividual::TObjVec &speed = indv->speed();
+	CIndividual::TObjVec &f = indv->objs();
+	const double infeasible_value = 1e8;
+	indv->set_feasible(true);
+
+	// ----- Check if solution is valid. -----
+	vector <bool> check_gene;
+	check_gene.resize(routes.size(), false);
+	bool continous_depot = false;
+	double load_check = 0.0;
+	int vehicle_num = 0;
+	//cout << "\nEva :\n";
+	for (size_t i = 0; i<routes.size(); i++)
+	{
+		//cout << "x[i] = " << x[i] << endl;
+		if (routes[i] == depot()) {
+			//cout << "1" << endl;
+			vehicle_num++;
+			load_check = 0;
+			if (continous_depot)
+			{
+				f[0] = infeasible_value;
+				f[1] = infeasible_value;
+				cout << "routes = " << routes[i - 1] << ' ' << routes[i] << endl;
+				cout << "continous Invalid !" << endl;
+				cout << "Please Enter to continue ... " << endl; getchar();
+				indv->set_feasible(false);
+				return false;
+			}
+			continous_depot = true;
+		}
+		else if (check_gene[routes[i]])
+		{
+			//cout << "2" << endl;
+			f[0] = infeasible_value;
+			f[1] = infeasible_value;
+			cout << "same customers Invalid !" << endl;
+			cout << "Please Enter to continue ... " << endl; getchar();
+			indv->set_feasible(false);
+			return false;
+		}
+		else
+		{
+			//cout << "3" << endl;
+			load_check += node_[routes[i]].demand;
+			//cout << "load = " << load_check << endl;
+			if (load_check > maxload_)
+			{
+				f[0] = infeasible_value;
+				f[1] = infeasible_value;
+				indv->ShowRoute();
+				cout << "load Invalid !" << endl;
+				cout << "Please Enter to continue ... " << endl; getchar();
+				indv->set_feasible(false);
+				return false;
+			}
+			check_gene[routes[i]] = true;
+			continous_depot = false;
+		}
+	}
+	// ----- set the vehicle num -----
+	indv->set_num_vehicles(vehicle_num - 1);
+
+	//cout << "vnum = " << indv->num_vehicles() << endl; getchar();
+
+	// You can define your own problem here.
+
+	//int limit_vehicles = (int)indv->num_vehicles() - (int)this->num_vehicles(); //現在沒有車輛限制
+	//f[0] = max((int)indv->num_vehicles() - (int)this->num_vehicles(), static_cast<size_t>(0))*5e3;
+	//f[0] = max(limit_vehicles, static_cast<int>(0))*5e3; //現在沒有車輛限制
+	// print x and routes 
+
+	//cout << *indv << endl; // print x 
+	//indv->ShowRoute(); // print route
+
+	double total_fuel = 0.0, total_distance = 0.0, total_time = 0.0;
+	int head = 1, tail = 1, depot_cnt = 1;
 	for (int i = 1; i < routes.size(); i++)
 	{
-		if (routes[i] == depot_section_)
+		if (routes[i] == depot_section_)// 一次算一條route
 		{
-			index_two = i-1;
-			test_dis += Calculate_distance(routes, index_one, index_two);
-			index_one = i + 1;
+			tail = i - 1;
+			//cout << "fuel = " << head << " " << tail << " = " << head - depot_cnt << " " << tail - depot_cnt << endl;
+			total_fuel += Calculate_fuel(indv, head - depot_cnt, tail - depot_cnt);
+			//cout << "distance" << head << " " << tail << " = " << head - depot_cnt << " " << tail - depot_cnt << endl;
+			total_distance += Calculate_distance(routes, head, tail) / 1000; //m => km
+																			 //cout << "time" << head << " " << tail << " = " << head - depot_cnt << " " << tail - depot_cnt << endl;
+			total_time += Calculate_time(indv, head - depot_cnt, tail - depot_cnt);
+			//cout << "OK" << endl;
+			head = i + 1;
+			depot_cnt++;
 		}
 	}
-	cout << "test dis = " << test_dis << endl; getchar();*/
+	indv->set_total_dis(total_distance);
+	f[0] = total_fuel;
+	f[1] = total_time;
+	//cout << "fuel = " << total_fuel << endl;
+	//cout << "total dis = " << total_distance << endl;
+	//cout << "total time = " << total_time << endl; //getchar();
+
+
 	// 找跟UK10_1相近的解--------------------------------start
 	/*if (total_distance > 408 && total_distance < 410)
 	{
-		cout << "routes : ";
-		for (int i = 0; i < routes.size(); i++)
-		{
-			cout << routes[i] << " ";
-		}
-		cout << endl;
-		cout << "total dis = " << total_distance << endl;
-		cout << "fuel = " << f[0] << endl;
-		getchar();
+	indv->ShowRoute();
+	cout << "total dis = " << total_distance << endl;
+	cout << "fuel = " << f[0] << endl;
+	cout << "time = " << f[1]/3600 << endl;
+	cout << "total cost = " << f[0] * 1.4 + f[1]/3600 * 8 << endl;
+	cout << "feasible = " << indv->feasible() << endl;
+	getchar();
 	}*/
 	//cout << "f[0] = " << f[0] << endl;
-	//cout << "total dis = " << total_distance/1000 << "(KM)" << endl; //getchar();
 	//cout << "Fuel = " << f[0] << "(L)" << endl; //getchar();
 	// 找跟UK10_1相近的解---------------------------------end
-	// ----- object 2 (driving time): total using time ------
-	/*************************************************************************
-		minimize total sj
-		sj = cj + tj + dj0/vr
-		簡單來說就是所有時間都要算進去 = 回倉庫時間 - 倉庫出發時間 
-	*************************************************************************/
-	//cout << "Obj 2" << endl; getchar();
 
-	cout << "routes : ";
-	for (int i = 0; i < routes.size(); i++)
-	{
-		cout << routes[i] << " ";
-	}
-	cout << endl;
-
-	size_t next_index = 0, now_index = 0;
-	for (size_t i = 1; i<routes.size(); i++)
-	{
-		if (routes[i] == depot())
-		{
-			cout << "two" << endl;
-			double route_time = start_time_;
-			//f[1] += start_time_;
-			//cout << "depot = " << i << endl;
-			next_index = i;
-			double wait_time = 0;
-			for (size_t j = now_index; j<next_index; j++)
-			{
-				// ---- calculate waiting time -----
-				
-				if (route_time < node_[routes[j]].ready_time)
-				{
-					wait_time = node_[routes[j]].ready_time - route_time;
-				}
-				else wait_time = 0;
-				
-				// ---- calculate total time -----
-				//f[1] += wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / (speed[j]*1000/3600);
-				route_time += wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / (speed[j]);
-				//f[1] += wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / (speed[j]);
-
-				//if (total_distance > 646 && total_distance < 648)
-				//{
-				//	cout << "route = " << routes[j] << " " << routes[j + 1] << endl;
-				//	cout << "wait time = " << wait_time << endl;
-				//	cout << "service time = " << node_[routes[j]].service_time << endl;
-				//	cout << "dis = " << distance_[routes[j]][routes[j + 1]] << endl;
-				//	cout << "speed = " << speed[j] << endl;
-				//	cout << "walk time = " << (double)distance_[routes[j]][routes[j + 1]] / (speed[j]) << endl;
-				//	cout << "f[1] += " << wait_time + node_[routes[j]].service_time + distance_[routes[j]][routes[j + 1]] / speed[j] << " = " << f[1] << endl;
-				//	cout << "time = " << f[1] << endl; //getchar(); 
-				//}
-				
-			}
-			route_time -= start_time_;
-			f[1] += route_time;
-			//cout << "route time = " << route_time << endl;
-			//cout << "final f[1] = " << f[1] << endl;
-			now_index = next_index;
-		}
-	}
-	
-	/*if (total_distance > 646 && total_distance < 648) {
-		cout << "total dis = " << total_distance << endl;
-		getchar();
-	}*/
-	double test_time = 0.0;
-	int index_one = 1, index_two = 1;
-	for (int i = 1; i < routes.size(); i++)
-	{
-		if (routes[i] == depot_section_)
-		{
-			//cout << "one" << endl;
-			index_two = i - 1;
-			test_time += Calculate_time(indv, index_one, index_two);
-			index_one = i + 1;
-			//cout << "test time = " << test_time << endl; getchar();
-		}
-	}
+	/*cout << "fuel = " << f[0] << endl;
+	cout << "time = " << f[1] / 3600 << endl;
+	cout << "feasible = " << indv->feasible() << endl; getchar();*/
 	//cout << "= " << f[1] / 3600 << "(h)" << endl; //getchar();
+	if (indv->feasible())
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 
-	return true;
 }

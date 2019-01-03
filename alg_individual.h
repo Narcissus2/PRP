@@ -44,6 +44,9 @@ public:
 
 	void set_total_dis(double td) { total_distance_ = td; }
 	const double & total_dis() const { return total_distance_; }
+	
+	void set_feasible(bool c) { feasible_ = c; }
+	const bool feasible() const { return feasible_; }
 
 	void set_num_vehicles(size_t nv) { num_vehicles_ = nv; }
 	size_t num_vehicles() const { return num_vehicles_;  }
@@ -51,6 +54,7 @@ public:
 	size_t num_evaluate() const { return num_evaluate_; }
 	void add_eva() { num_evaluate_ += 1; }
 	void set_eva(size_t e) { num_evaluate_ = e; }
+	void ShowRoute();
 
 	// if a target problem is set, memory will be allocated accordingly in the constructor
 	static void SetTargetProblem(const BProblem &p) { target_problem_ = &p; }
@@ -75,6 +79,7 @@ private:
 	TObjVec speeds_;
 	TObjVec objectives_;
 	TObjVec converted_objectives_;
+	bool feasible_;
 
 	static const BProblem *target_problem_;
 };

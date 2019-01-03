@@ -38,3 +38,13 @@ std::ostream & operator << (std::ostream &os, const CIndividual &indv)
 	return os;
 }
 // ----------------------------------------------------------------------
+void CIndividual::ShowRoute()
+{
+	cout << "route = ";
+	for (int i = 0; i < real_routes_.size(); i++)
+	{
+		cout << real_routes_[i] << ' ';
+	}
+	cout << endl;
+}
+// ----------------------------------------------------------------------

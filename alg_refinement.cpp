@@ -1319,15 +1319,17 @@ bool SpeedOptimalAlgorithm::operator()(CIndividual *indv, const BProblem &prob, 
 		cout << "n size = " << n.size() << endl;
 		cout << "up size = " << e_up.size() << endl;*/
 		
-		if (edown[i] <= n[routes[i]].ready_time)
+		if (edown[i] < n[routes[i]].ready_time) // too early 
 		{
 			cout << "s1 ";
-			speeds[i - 1] = D / (eup[i] - n[routes[i]].ready_time - T);
+			//speeds[i - 1] = D / (eup[i] - n[routes[i]].ready_time - T); // paper version 
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);// my realize version
 		}
-		else
+		else if(edown[i] > n[routes[i]].due_time) // too late
 		{
 			cout << "s2 ";
-			speeds[i - 1] = D / (eup[i] - edown[i] - T);
+			//speeds[i - 1] = D / (eup[i] - edown[i] - T); // paper version
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - eup[i - 1]); // my realize version
 		}
 		cout << "step 1 speed[i-1] = " << speeds[i - 1] << endl;
 		// 2.set the v* 
@@ -1361,8 +1363,8 @@ bool SpeedOptimalAlgorithm::operator()(CIndividual *indv, const BProblem &prob, 
 		v* = 15.3303 (m/s) = 55.18908 (km/h)
 		*/
 		double v_star = 0.0;
-		v_star = 15.3303; //minimizes fuel consumption costs
-	    //v_star = 20.9294; //minimizes fuel consumption costs and wage of driver
+		//v_star = 15.3303; //minimizes fuel consumption costs,(about 55 km/h)
+	    v_star = 20.9294; //minimizes fuel consumption costs and wage of driver(about 90km,h) 
 
 		// 3.if arrive too early 
 		//cout << "3" << endl;
@@ -1375,7 +1377,8 @@ bool SpeedOptimalAlgorithm::operator()(CIndividual *indv, const BProblem &prob, 
 			i != n.size() - 1)
 		{
 			cout << "3.1 - speed[i-1] =" << speeds[i - 1] << endl;
-			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - edown[i - 1]);
+			//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - edown[i - 1]); // paper version
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - edown[i - 1] - n[routes[i-1]].service_time); //  my realize version
 		}
 		/*
 			前面意思一樣看eup[i-1]太早到,但是且eup[i] >= 最晚服務時間(太晚到)
@@ -1385,15 +1388,21 @@ bool SpeedOptimalAlgorithm::operator()(CIndividual *indv, const BProblem &prob, 
 			     eup[i] >= n[routes[i]].due_time + n[routes[i]].service_time &&
 			     i != n.size() - 1)
 		{
-			cout << "3.2 - speed[i - 1] = " << speeds[i - 1] << endl;
-			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - edown[i - 1]);
+			cout << "3.2 - speed[i-1] = " << speeds[i - 1] << endl;
+			//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - edown[i - 1] ); // paper version
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - edown[i - 1] - n[routes[i - 1]].service_time);//  my realize version
 		}
 		// 4.last point in route ? 
 		//cout << "4" << endl;
 		if (i == N - 1 && eup[i] != edown[i])
 		{
-			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);
+			//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);//paper version
 			cout << "step 4 speed = " << speeds[i - 1] << endl;
+			if (edown[i] > n[routes[i]].due_time)
+			{
+				speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].due_time - eup[i - 1]); // my version
+			}
+			
 		}
 		
 		// 5.adjust the speed to meet the time window

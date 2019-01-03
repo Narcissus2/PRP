@@ -16,16 +16,18 @@ public:
 	virtual std::size_t num_variables() const { return num_vars_; }
 	virtual std::size_t num_objectives() const { return num_objs_; }
 	virtual bool EvaluateDpCar(CIndividual *indv) const;
-	virtual bool Dp2Object(CIndividual *indv,double obj1_rate) const;
-	//virtual bool PRPDP(CIndividual *indv, double obj1_rate, const double max_fuel, const double max_time) const;
+	virtual bool PRPDP(CIndividual *indv, double obj1_rate) const;
 	virtual double Calculate_distance(const CIndividual::TDecVec &routes, int s, int e) const;
-	virtual double Calculate_time(const CIndividual *indv, int s, int e) const;
+	virtual double Calculate_time( CIndividual *indv, int s, int e) const;
+	virtual double Calculate_fuel(const CIndividual *indv, int s, int e) const;
 	virtual bool EvaluateOldEncoding(CIndividual *indv) const;
 
 
 private:
 	std::size_t num_vars_, num_objs_;
 	const double a_ = 6.208*0.001, b_ = 0.2125, m_ = 2.61,FCR_full_ = 0.390*10,FCR_empty_ = 0.296*1; //m = CER = CO2 rate
+	//PRP
+	const double time_punishment_ = 1e6, fuel_punishment_ = 1e3, distance_punishment_ = 1e6;
 
 };
 
