@@ -26,11 +26,10 @@ public:
 
 	virtual std::size_t num_variables() const = 0;
 	virtual std::size_t num_objectives() const = 0;
-	virtual bool EvaluateDpCar(CIndividual *indv) const = 0;
 	virtual bool PRPDP(CIndividual *indv, double obj1_rate) const = 0;
 	virtual double Calculate_distance(const CIndividual::TDecVec &routes, int s, int e) const = 0;
-	virtual double Calculate_time(CIndividual *indv, int s, int e) const = 0;
-	virtual double Calculate_fuel(const CIndividual *indv, int s, int e) const = 0;
+	virtual double Calculate_time(CIndividual *indv, int s, int e, int depot_num) const = 0;
+	virtual double Calculate_fuel(const CIndividual *indv, int s, int e, int depot_num) const = 0;
 	virtual bool EvaluateOldEncoding(CIndividual *indv) const = 0;
 	
 

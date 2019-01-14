@@ -15,11 +15,10 @@ public:
 
 	virtual std::size_t num_variables() const { return num_vars_; }
 	virtual std::size_t num_objectives() const { return num_objs_; }
-	virtual bool EvaluateDpCar(CIndividual *indv) const;
 	virtual bool PRPDP(CIndividual *indv, double obj1_rate) const;
 	virtual double Calculate_distance(const CIndividual::TDecVec &routes, int s, int e) const;
-	virtual double Calculate_time( CIndividual *indv, int s, int e) const;
-	virtual double Calculate_fuel(const CIndividual *indv, int s, int e) const;
+	virtual double Calculate_time( CIndividual *indv, int s, int e, int depot_num) const;
+	virtual double Calculate_fuel(const CIndividual *indv, int s, int e, int depot_num) const;
 	virtual bool EvaluateOldEncoding(CIndividual *indv) const;
 
 

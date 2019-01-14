@@ -51,12 +51,13 @@ for all_exp in range(len(explist)):
     point_list = []
     line = f.readline()
     while line:
-        line = f.readline()
+        
         line = line.split()
         if not line: 
             break
         #print(line)
         point_list.append(line)
+        line = f.readline()
     #os.system('pause')
     f.close()
 #--------------------------------------------
@@ -134,8 +135,8 @@ for all_exp in range(len(explist)):
 #----------視窗繪製---------------------
     plt.title("vehicle routing-PF-"+data_name[2])
     #label 設定 x,y標籤名稱
-    plt.ylabel("emission")
-    plt.xlabel("distance")
+    plt.ylabel("time(s)")
+    plt.xlabel("fuel(L)")
 
 #plt.xscale('linear')
 #設定畫圖兩邊邊界 xticks yticks

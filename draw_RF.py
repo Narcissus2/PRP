@@ -68,6 +68,7 @@ for all_exp in range(len(explist)):
         i = 0
         x = []
         y = []
+        point_list.sort()
         while i < len(point_list):
             j=0
             while j<2:

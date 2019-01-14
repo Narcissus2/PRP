@@ -54,11 +54,11 @@ int main()
 
 		SetupExperiment(nsgaiii, &problem, exp_ini);
 		//cout << "---- Setup finish ----" << endl; getchar();
-		Gnuplot gplot;
+		//Gnuplot gplot;
 		ofstream IGD_results(nsgaiii.name() + "-" + problem->name() + "-IGD.txt"); // output file for IGD values per run
 
 																				   // ----- Run the algorithm to solve the designated function -----
-		const size_t NumRuns = 10; // 20 is the setting in NSGA-III paper
+		const size_t NumRuns = 20; // 20 is the setting in NSGA-III paper
 		for (size_t r = 0; r<NumRuns; r += 1)
 			/*bool set_check = false;
 			const size_t set_num = 1000000;
@@ -192,7 +192,8 @@ bool OutputChromesome(const CIndividual &chrome, const string file_name,const BP
 	}
 	outfile << endl;
 	double fuel_consumed = chrome.objs()[0],
-		time = chrome.objs()[1] / 3600,
+		//time = chrome.objs()[1] /3600 , // 500 是因為裡面有normalize 所以/500 現在*回來才對
+		time = chrome.objs()[1] , // 我想看真正的值所以先用這個
 		fuel_cost = fuel_consumed*prob.fc(),
 		driver_cost = time * prob.fd(),
 		total_cost = fuel_cost + driver_cost;

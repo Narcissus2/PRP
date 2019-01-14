@@ -288,7 +288,7 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 		for (size_t i = cut1; i <= cut2; i += 1) // keep the enclosed section
 		{
 			(*children[c])[i] = (*parents[father])[i];
-			(*c_speeds[c])[i] = parent1.speed()[i];
+			//(*c_speeds[c])[i] = parent1.speed()[i];
 			exists.insert((*children[c])[i]);
 		}
 		//std::cout << "insert OK" << endl;
@@ -300,7 +300,7 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 			while (exists.count((*parents[mother])[m_pos]) > 0) m_pos = (m_pos + 1) % parents[mother]->size();
 
 			(*children[c])[c_pos] = (*parents[mother])[m_pos];
-			(*c_speeds[c])[c_pos] = parent2.speed()[m_pos];
+			//(*c_speeds[c])[c_pos] = parent2.speed()[m_pos];
 			exists.insert((*children[c])[c_pos]);
 
 			c_pos = c_pos + 1;
@@ -317,6 +317,16 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 			exists.insert((*children[c])[c_pos]);
 
 			c_pos = c_pos + 1;
+		}
+
+		for (int i = 0; i < (*c_speeds[c]).size(); i++)
+		{
+			if ((*c_speeds[c])[i] != 20.9294 && (*c_speeds[c])[i] != 15.3303)
+			{
+				//cout << "crossover speed = " << (*c_speeds[c])[i] << endl;// getchar();
+				//(*c_speeds[c])[i] = 20.9294;
+				(*c_speeds[c])[i] = 15.3303;
+			}
 		}
 		//std::cout << "back OK" << endl;
 		//swap((*children[c])[0], *find(children[c]->begin(), children[c]->end(), Depot));

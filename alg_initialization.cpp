@@ -290,12 +290,20 @@ void CRandomInitialization::KNN(CIndividual *indv, const BProblem &prob) const
 
 	// ----- set up the initial speed -----
 	CIndividual::TObjVec & speed = indv->speed();
-	speed.resize(routes.size() - 1);
-	for (int i = 0; i < routes.size() - 1; i++)
+	speed.resize(x.size()*1.3);
+	for (int i = 0; i < speed.size(); i++)
 	{
 		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
 		//speed[i] = prob.avg_speed(); // 單位是 m/s
 		speed[i] = prob.want_speed(); // 90 km/h
+	}
+	for (int i = 0; i < speed.size(); i++) // 檢查這裡有沒有動到速度
+	{
+		if (speed[i] != 20.9294 && speed[i] != 15.3303)
+		{
+			cout << "i = " << i << endl;
+			cout << "ini this speed is " << speed[i] << endl; getchar();
+		}
 	}
 
 }
@@ -445,12 +453,20 @@ void CRandomInitialization::random_permutate_nd(CIndividual *indv, const BProble
 
 	//----- set up the initial speed (好像還不用設定)-----
 	CIndividual::TObjVec & speed = indv->speed();
-	speed.resize(x.size());
-	for (int i = 0; i < x.size() - 1; i++)
+	speed.resize(x.size()*1.3);
+	for (int i = 0; i < speed.size(); i++)
 	{
 		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
 		//speed[i] = prob.avg_speed();
 		speed[i] = prob.want_speed(); // 90 km/h
+	}
+	for (int i = 0; i < speed.size(); i++) // 檢查這裡有沒有動到速度
+	{
+		if (speed[i] != 20.9294 && speed[i] != 15.3303)
+		{
+			cout << "i = " << i << endl;
+			cout << "ini2 this speed is " << speed[i] << endl; getchar();
+		}
 	}
 
 }

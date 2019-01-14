@@ -100,6 +100,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 	CTwoOpt OPT2;
 	CAllPointOpt APO;
 	SpeedOptimalAlgorithm SOA;
+	SpeedOptimalAlgorithm2 SOA2;
 	Initial_E IniE;
 
 
@@ -113,7 +114,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 	//MyTimers.GetTimer("RandomIni")->end();
 	double cnt = 0;
 	int retry_num = 0, total_evaluate = 0;
-
+	cout << "new" << endl;
 	for (size_t i = 0; i < PopSize; i += 1)
 	{
 		/*if (problem.EvaluateDpCar(&pop[cur][i]))
@@ -122,7 +123,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 		}*/
 		//MyTimers.GetTimer("DPEvaluate")->start();
 		//pop[cur][i].ShowRoute();
-		if (problem.PRPDP(&pop[cur][i],100))//100代表100%用距離切0%用emission切
+		if (problem.PRPDP(&pop[cur][i],50))//100代表100%用距離切0%用emission切
 		{
 			pop[cur][i].e_up().resize(pop[cur][i].routes().size());
 			pop[cur][i].e_down().resize(pop[cur][i].routes().size());
@@ -133,13 +134,13 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				{
 					//cout << "\nv = " << v << endl;
 					e = v;
-					//IniE(&pop[cur][i], problem, s, e);
-					//SOA(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+					IniE(&pop[cur][i], problem, s, e);
+					SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
 					s = e; // 換下一條route
 				}
 			}
-
-			cnt++;
+			cnt += problem.EvaluateOldEncoding(&pop[cur][i]);
+			
 		}
 		// --- pure eva ---- up
 		//if (problem.EvaluateOldEncoding(&pop[cur][i]))//pure evaluate
@@ -278,13 +279,72 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//bool mu2 = swap_mutation(&pop[cur][PopSize + i + 1]);
 			/*problem.EvaluateDpCar(&pop[cur][PopSize + i]);
 			problem.EvaluateDpCar(&pop[cur][PopSize + i + 1]);*/
+			//cout << "father = " << father << endl;
+			//cout << "mother = " << mother << endl;
+
 			double obj1_rate = 100 - (double)father / PopSize * 100;
-			cnt += problem.PRPDP(&pop[cur][PopSize + i], obj1_rate);
+			//cout << "obj1 = " << obj1_rate << endl;
+			if (problem.PRPDP(&pop[cur][PopSize + i], obj1_rate))//100代表100%用距離切0%用emission切
+			//if (problem.PRPDP(&pop[cur][PopSize + i],90))
+			{
+				//cout << "father" << endl;
+				pop[cur][i].e_up().resize(pop[cur][i].routes().size());
+				pop[cur][i].e_down().resize(pop[cur][i].routes().size());
+				size_t s = 0, e = 0;
+				for (int v = 1; v < pop[cur][i].routes().size(); v++)
+				{
+					if (pop[cur][i].routes()[v] == problem.depot())
+					{
+						//cout << "\nv = " << v << endl;
+						e = v;
+						IniE(&pop[cur][i], problem, s, e);
+						SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+						s = e; // 換下一條route
+					}
+				}
+
+				//cnt++;
+			}
+			else
+			{
+				//cout << "WTFFFFF" << endl; getchar();
+			}
+			//cnt += problem.PRPDP(&pop[cur][PopSize + i], obj1_rate);
+			cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
 			obj1_rate = 100 - (double)mother / PopSize * 100;
-			cnt += problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate);
+
+			if (problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate))//100代表100%用距離切0%用emission切
+			//if (problem.PRPDP(&pop[cur][PopSize + i + 1], 90))
+			{
+				//cout << "mother" << endl;
+				pop[cur][i].e_up().resize(pop[cur][i].routes().size());
+				pop[cur][i].e_down().resize(pop[cur][i].routes().size());
+				size_t s = 0, e = 0;
+				for (int v = 1; v < pop[cur][i].routes().size(); v++)
+				{
+					if (pop[cur][i].routes()[v] == problem.depot())
+					{
+						//cout << "\nv = " << v << endl;
+						e = v;
+						IniE(&pop[cur][i], problem, s, e);
+						SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+						s = e; // 換下一條route
+					}
+				}
+
+				//cnt++;
+			}
+			else
+			{
+				//cout << "PRP false" << endl; getchar();
+			}
+			cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
+			//cout << "obj2 = " << obj1_rate << endl;
+			//cnt += problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate);
+			//if (mother == 99) getchar();
 			//problem.Dp2Object(&pop[cur][PopSize + i], 100);
 			//problem.Dp2Object(&pop[cur][PopSize + i + 1], 100);
-			total_evaluate += 2;
+			total_evaluate += 4;
 			//cout << "PRP OK" << endl;
 			//開始印只作crossover 和 DP的child-----------------------------
 			/*WriteFile(pop[cur][PopSize + i], file_name);

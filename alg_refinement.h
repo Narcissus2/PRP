@@ -115,6 +115,12 @@ public:
 	bool operator()(CIndividual * indv, const BProblem & prob, int s, int e,int N) const;
 };
 
+class SpeedOptimalAlgorithm2
+{
+public:
+	bool operator()(CIndividual * indv, const BProblem & prob, int s, int e, int N) const;
+};
+
 class CReArrangePermutation
 {
 public:
