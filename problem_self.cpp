@@ -750,8 +750,10 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 		//cout << "final inf" << endl;
 		
 		//getchar();
-		f[0] = infeasible_value;
-		f[1] = infeasible_value;
+		//f[0] = infeasible_value;
+		//f[1] = infeasible_value;
+		f[0] *= 1.5;
+		f[1] *= 1.5;
 		/*cout << "f 0 = " << f[0] << endl;
 		cout << "f 1 = " << f[1] << endl;
 		getchar();*/

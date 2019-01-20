@@ -456,7 +456,9 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				//if(t >=33 && t < 66){
 				//	NEH(&pop[cur][PopSize + i], problem);
 				//	RNEH(&pop[cur][PopSize + i], problem);
-				PNEH(&pop[cur][PopSize + i], problem);
+
+				//PNEH(&pop[cur][PopSize + i], problem);
+
 				//PNEH2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi);
 				//total_evaluate += pop[cur][PopSize + i].num_evaluate();//NEH也不算?
 				//PNEH2O(&pop[cur][PopSize + i], problem, 100, normal_dis, normal_emi);
@@ -464,12 +466,42 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				//problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1);
 				/*WriteFile(pop[cur][PopSize + i], file_name);
 				WriteFile(pop[cur][PopSize + i + 1], file_name);*/
+
+				if (PNEH(&pop[cur][PopSize + i], problem))//100代表100%用距離切0%用emission切
+																	  //if (problem.PRPDP(&pop[cur][PopSize + i],90))
+				{
+					//cout << "father" << endl;
+					pop[cur][PopSize + i].e_up().resize(pop[cur][PopSize + i].routes().size());
+					pop[cur][PopSize + i].e_down().resize(pop[cur][PopSize + i].routes().size());
+					size_t s = 0, e = 0;
+					for (int v = 1; v <pop[cur][PopSize + i].routes().size(); v++)
+					{
+						if (pop[cur][PopSize + i].routes()[v] == problem.depot())
+						{
+							//cout << "\nv = " << v << endl;
+							e = v;
+							IniE(&pop[cur][PopSize + i], problem, s, e);
+							SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
+							s = e; // 換下一條route
+						}
+					}
+
+					//cnt++;
+					//cout << "PRP OK1" << endl;
+				}
+				else
+				{
+					cout << "PNEH false1" << endl; getchar();
+				}
+
 			}
 			if (num2 == NEH_index) {
 				//if (t >= 33 && t < 66) {
 				//	NEH(&pop[cur][PopSize + i + 1], problem);
 				//	RNEH(&pop[cur][PopSize + i + 1], problem);
-				PNEH(&pop[cur][PopSize + i + 1], problem);
+				
+				//PNEH(&pop[cur][PopSize + i + 1], problem);
+
 				//PNEH2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi);
 				//total_evaluate += pop[cur][PopSize + i + 1].num_evaluate();//NEH也不算?
 				//PNEH2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi);
@@ -478,6 +510,33 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
 				/*WriteFile(pop[cur][PopSize + i], file_name);
 				WriteFile(pop[cur][PopSize + i + 1], file_name);*/
+
+				if (PNEH(&pop[cur][PopSize + i + 1], problem))//100代表100%用距離切0%用emission切
+														  //if (problem.PRPDP(&pop[cur][PopSize + i],90))
+				{
+					//cout << "father" << endl;
+					pop[cur][PopSize + i].e_up().resize(pop[cur][PopSize + i].routes().size());
+					pop[cur][PopSize + i].e_down().resize(pop[cur][PopSize + i].routes().size());
+					size_t s = 0, e = 0;
+					for (int v = 1; v <pop[cur][PopSize + i].routes().size(); v++)
+					{
+						if (pop[cur][PopSize + i].routes()[v] == problem.depot())
+						{
+							//cout << "\nv = " << v << endl;
+							e = v;
+							IniE(&pop[cur][PopSize + i], problem, s, e);
+							SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
+							s = e; // 換下一條route
+						}
+					}
+
+					//cnt++;
+					//cout << "PRP OK1" << endl;
+				}
+				else
+				{
+					cout << "PNEH false2" << endl; getchar();
+				}
 			}
 			//cout << "After OPO mutation" << endl; //這種mutation要放在後面做比較有效
 			/*if (mu1) {
@@ -490,7 +549,9 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//2-OPT
 			//cout << "After 2-OPT" << endl;
 			if (num1 == OPT2_index) { // t 來看第幾代要做mutation
-				OPT2(&pop[cur][PopSize + i], problem);
+
+				//OPT2(&pop[cur][PopSize + i], problem);
+
 				//problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1);
 				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
 
@@ -512,10 +573,39 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				//}
 
 				//OPT2O(&pop[cur][PopSize + i], problem, 100, normal_dis, normal_emi, Min_fc, Min_emi);
+
+				if (OPT2(&pop[cur][PopSize + i], problem))//100代表100%用距離切0%用emission切
+														  //if (problem.PRPDP(&pop[cur][PopSize + i],90))
+				{
+					//cout << "father" << endl;
+					pop[cur][PopSize + i].e_up().resize(pop[cur][PopSize + i].routes().size());
+					pop[cur][PopSize + i].e_down().resize(pop[cur][PopSize + i].routes().size());
+					size_t s = 0, e = 0;
+					for (int v = 1; v <pop[cur][PopSize + i].routes().size(); v++)
+					{
+						if (pop[cur][PopSize + i].routes()[v] == problem.depot())
+						{
+							//cout << "\nv = " << v << endl;
+							e = v;
+							IniE(&pop[cur][PopSize + i], problem, s, e);
+							SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
+							s = e; // 換下一條route
+						}
+					}
+
+					//cnt++;
+					//cout << "PRP OK1" << endl;
+				}
+				else
+				{
+					cout << "2OPT1 false1" << endl; getchar();
+				}
 			}
 			if (num2 == OPT2_index) {
 				//if (t >= 66) {
-				OPT2(&pop[cur][PopSize + i + 1], problem);
+
+				//OPT2(&pop[cur][PopSize + i + 1], problem);
+
 				//problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2);
 				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
 				/*OPT2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi, Min_fc, Min_emi);
@@ -532,6 +622,33 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				}*/
 
 				//OPT2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi, Min_fc, Min_emi);
+
+				if (OPT2(&pop[cur][PopSize + i + 1], problem))//100代表100%用距離切0%用emission切
+														  //if (problem.PRPDP(&pop[cur][PopSize + i],90))
+				{
+					//cout << "father" << endl;
+					pop[cur][PopSize + i].e_up().resize(pop[cur][PopSize + i].routes().size());
+					pop[cur][PopSize + i].e_down().resize(pop[cur][PopSize + i].routes().size());
+					size_t s = 0, e = 0;
+					for (int v = 1; v <pop[cur][PopSize + i].routes().size(); v++)
+					{
+						if (pop[cur][PopSize + i].routes()[v] == problem.depot())
+						{
+							//cout << "\nv = " << v << endl;
+							e = v;
+							IniE(&pop[cur][PopSize + i], problem, s, e);
+							SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
+							s = e; // 換下一條route
+						}
+					}
+
+					//cnt++;
+					//cout << "PRP OK1" << endl;
+				}
+				else
+				{
+					cout << "2OPT1 false1" << endl; getchar();
+				}
 			}
 			//One Point Optimal Global
 			//cout << "after One point optimal (Global)" << endl;
@@ -596,7 +713,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//system("pause");
 
 			//檢察跟之前有無相同的chrome 
-			int num_mu = 2;
+			//int num_mu = 2;
 			//for (int j = 0; j < PopSize + i; j++) //father and child
 			//{
 			//	if (Same(pop[cur][PopSize + i], pop[cur][j]))
