@@ -16,6 +16,7 @@ public:
 	void operator()(CPopulation *pop, const BProblem &prob) const;
 	void random_permutate(CIndividual *indv, const BProblem &prob) const;
 	void random_permutate_nd(CIndividual *indv, const BProblem &prob) const;
+	void CRandomInitialization::rand_permutate_nd_time(CIndividual *indv, const BProblem &prob) const;
 	void KNN(CIndividual *indv, const BProblem &prob) const;
 };
 

@@ -26,7 +26,7 @@ private:
 	std::size_t num_vars_, num_objs_;
 	const double a_ = 6.208*0.001, b_ = 0.2125, m_ = 2.61,FCR_full_ = 0.390*10,FCR_empty_ = 0.296*1; //m = CER = CO2 rate
 	//PRP
-	const double time_punishment_ = 1e6, fuel_punishment_ = 1e3, distance_punishment_ = 1e6;
+	const double time_punishment_ = 1e8, fuel_punishment_ = 1e8, distance_punishment_ = 1e8;
 
 };
 

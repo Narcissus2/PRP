@@ -1021,6 +1021,8 @@ bool CTwoOpt::operator()(CIndividual *indv, const BProblem &prob) const
 	CIndividual::TDecVec &routes = indv->routes();
 	const vector<Node> & n = prob.node();
 	const vector<vector<double>> & distance = prob.dis();
+	//indv->ShowRoute();
+	//cout << "route size = " << indv->routes().size() << endl;
 
 	//2-OPT------------------------------------------------------------
 	size_t head = 1, tail = 1;
@@ -1028,23 +1030,38 @@ bool CTwoOpt::operator()(CIndividual *indv, const BProblem &prob) const
 	{
 		if (routes[i] == prob.depot())
 		{
+			
 			tail = i;
 			//cout << "head = " << head << " tail = " << tail << endl;
 			//best_dis 先弄成原路線distance
 			double best_dis = distance[routes[head - 1]][routes[head]];
+			vector<int>best_route;
+			best_route.push_back(routes[head]);
 			//cout << "origial route = ";
 			for (size_t j = head + 1; j < tail; j++)
 			{
-				//cout << routes[j - 1] << ' ';
+				//cout << routes[j] << ' ';
+				best_route.push_back(routes[j]);
 				best_dis += distance[routes[j - 1]][routes[j]];
 			}
+			//cout << endl;
 			best_dis += distance[routes[tail - 1]][routes[tail]];
+			//cout << "best dis = " << best_dis << endl; getchar();
+			/*cout << "best size = " << best_route.size() << endl;
+			cout << "best route = ";
+			for (int j = 0; j < best_route.size(); j++)
+			{
+				cout << best_route[j] << ' ';
+			}
+			cout << endl;
+			cout << "cal ori dis OK" << endl; getchar();*/
 			//cout << routes[tail - 1] << endl;
 			//------------------------------------
-			vector<int>best_route;
+			
 			for (int j = 0; j < tail - head - 1; j++) //這裡是不是要改
 			{
 				//cout << "j = " << j << endl;
+				//cout << "tail - head - 1 = " << tail - head - 1 << endl;
 				for (int k = j + 1; k < tail - head; k++)
 				{
 					//cout << "k = " << k << endl;
@@ -1077,7 +1094,7 @@ bool CTwoOpt::operator()(CIndividual *indv, const BProblem &prob) const
 						new_dis += distance[new_route[c - 1]][new_route[c]];
 					}
 					new_dis += distance[routes[tail]][new_route[tail - head - 1]]; // 倉庫到最後一點的距離
-
+					//cout << "new dis = " << new_dis << endl;
 					if (new_dis < best_dis) {
 						best_dis = new_dis;
 						best_route.clear();
@@ -1096,12 +1113,17 @@ bool CTwoOpt::operator()(CIndividual *indv, const BProblem &prob) const
 				//cout << "tail - head = " << tail - head << endl;
 				for (int c = 0; c < tail - head; c++) {
 					//cout << new_route[c] << ' ';
+					//cout << best_route[c] << ' ';
 					routes[c + head] = best_route[c];
 				}
+				//cout << endl;
 			}
 			head = tail + 1;
 		}
 	}
+	/*cout << "after 2OPT\n";
+	indv->ShowRoute(); getchar();*/
+
 	return true;
 }
 
@@ -1549,12 +1571,13 @@ bool SpeedOptimalAlgorithm2::operator()(CIndividual *indv, const BProblem &prob,
 	}
 	cout << endl;*/
 
-	double v_star_fuel = 0.0, v_star_total = 0.0;
+	double v_star_fuel = 0.0, v_star_total = 0.0,v_quick = 0.0;
 	v_star_fuel = 15.3303; //minimizes fuel consumption costs,(about 55 km/h)
 	//v_star_fuel = 20.9294;
 	v_star_total = 20.9294; //minimizes fuel consumption costs and wage of driver(about 90km,h) 
 	//v_star_total = 15.3303;
 	//v_star_total = 25;
+	v_quick = 25;
 	// 開始修改速度
 	for (int i = s + 1; i <= e; i++)
 	{
@@ -1563,10 +1586,12 @@ bool SpeedOptimalAlgorithm2::operator()(CIndividual *indv, const BProblem &prob,
 		{
 			//cout << "s1 ";
 			//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);// my realize version
-			speeds[i - 1] = v_star_fuel;
+			speeds[i - 1] = v_star_total;
+			//cout << "i-1 = " << i-1 << " " << speeds[i - 1] << " = ";
 			for (int j = i; j <= e; j++)
 			{
-				edown[j] = eup[j - 1] + distance[routes[j - 1]][routes[j]] / speeds[i - 1];
+				edown[j] = eup[j - 1] + distance[routes[j - 1]][routes[j]] / speeds[j - 1];
+				//cout << "j-1 = " << j - 1 << " " << speeds[j - 1] << endl; getchar();
 				if (edown[j] < n[routes[j]].ready_time)
 				{
 					eup[j] = n[routes[j]].ready_time + n[routes[j]].service_time;
@@ -1576,15 +1601,29 @@ bool SpeedOptimalAlgorithm2::operator()(CIndividual *indv, const BProblem &prob,
 					eup[j] = edown[j] + n[routes[j]].service_time;
 				}
 			}
-			/*if (speeds[i - 1] < 0) {
-				getchar();
-				speeds[i - 1] = prob.want_speed();
-				return false;
-			}*/
+			if (edown[i] < n[routes[i]].ready_time) // too early 
+			{
+				//cout << "s1 ";
+				//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);// my realize version
+				speeds[i - 1] = v_star_fuel;
+				for (int j = i; j <= e; j++)
+				{
+					edown[j] = eup[j - 1] + distance[routes[j - 1]][routes[j]] / speeds[j - 1];
+					if (edown[j] < n[routes[j]].ready_time)
+					{
+						eup[j] = n[routes[j]].ready_time + n[routes[j]].service_time;
+					}
+					else
+					{
+						eup[j] = edown[j] + n[routes[j]].service_time;
+					}
+				}
+
+			}
 		}
 		else
 		{
-			speeds[i - 1] = v_star_total;
+			//speeds[i - 1] = v_quick;
 		}
 	}
 
@@ -1606,7 +1645,7 @@ bool CReArrangePermutation::operator()(CIndividual *indv, const BProblem &prob) 
 	// re-arrange the permutation
 	//要有這個才會重新設定indv->var(),不然沒改變真正的順序
 
-	for (size_t i = 1, j = 1; i < routes.size(); i++)
+	for (size_t i = 1, j = 0; i < routes.size(); i++)
 	{
 		if (routes[i] == prob.depot()) {
 			continue;

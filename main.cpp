@@ -192,8 +192,8 @@ bool OutputChromesome(const CIndividual &chrome, const string file_name,const BP
 	}
 	outfile << endl;
 	double fuel_consumed = chrome.objs()[0],
-		//time = chrome.objs()[1] /3600 , // 500 是因為裡面有normalize 所以/500 現在*回來才對
-		time = chrome.objs()[1] , // 我想看真正的值所以先用這個
+		time = chrome.objs()[1] /3600 , // 500 是因為裡面有normalize 所以/500 現在*回來才對
+		//time = chrome.objs()[1] , // 我想看真正的值所以先用這個
 		fuel_cost = fuel_consumed*prob.fc(),
 		driver_cost = time * prob.fd(),
 		total_cost = fuel_cost + driver_cost;

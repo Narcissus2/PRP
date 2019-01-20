@@ -282,62 +282,81 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//cout << "father = " << father << endl;
 			//cout << "mother = " << mother << endl;
 
-			double obj1_rate = 100 - (double)father / PopSize * 100;
+			double obj1_rate1 = 100 - (double)father / PopSize * 100;
+			if (obj1_rate1 == 0)
+			{
+				obj1_rate1 = 1;
+			}
+			else if (obj1_rate1 == 100)
+			{
+				obj1_rate1 = 99;
+			}
+			double obj1_rate2 = 100 - (double)mother / PopSize * 100;
+			if (obj1_rate2 == 0)
+			{
+				obj1_rate2 = 1;
+			}
+			else if (obj1_rate2 == 100)
+			{
+				obj1_rate2 = 99;
+			}
 			//cout << "obj1 = " << obj1_rate << endl;
-			if (problem.PRPDP(&pop[cur][PopSize + i], obj1_rate))//100代表100%用距離切0%用emission切
+			if (problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1))//100代表100%用距離切0%用emission切
 			//if (problem.PRPDP(&pop[cur][PopSize + i],90))
 			{
 				//cout << "father" << endl;
-				pop[cur][i].e_up().resize(pop[cur][i].routes().size());
-				pop[cur][i].e_down().resize(pop[cur][i].routes().size());
+				pop[cur][PopSize + i].e_up().resize(pop[cur][PopSize + i].routes().size());
+				pop[cur][PopSize + i].e_down().resize(pop[cur][PopSize + i].routes().size());
 				size_t s = 0, e = 0;
-				for (int v = 1; v < pop[cur][i].routes().size(); v++)
+				for (int v = 1; v <pop[cur][PopSize + i].routes().size(); v++)
 				{
-					if (pop[cur][i].routes()[v] == problem.depot())
+					if (pop[cur][PopSize + i].routes()[v] == problem.depot())
 					{
 						//cout << "\nv = " << v << endl;
 						e = v;
-						IniE(&pop[cur][i], problem, s, e);
-						SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+						IniE(&pop[cur][PopSize + i], problem, s, e);
+						SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
 						s = e; // 換下一條route
 					}
 				}
 
 				//cnt++;
+				//cout << "PRP OK1" << endl;
 			}
 			else
 			{
-				//cout << "WTFFFFF" << endl; getchar();
+				cout << "PRP false1" << endl; getchar();
 			}
 			//cnt += problem.PRPDP(&pop[cur][PopSize + i], obj1_rate);
+			//cout << "after SOA1" << endl;
 			cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
-			obj1_rate = 100 - (double)mother / PopSize * 100;
 
-			if (problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate))//100代表100%用距離切0%用emission切
+			if (problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2))//100代表100%用距離切0%用emission切
 			//if (problem.PRPDP(&pop[cur][PopSize + i + 1], 90))
 			{
 				//cout << "mother" << endl;
-				pop[cur][i].e_up().resize(pop[cur][i].routes().size());
-				pop[cur][i].e_down().resize(pop[cur][i].routes().size());
+				pop[cur][PopSize + i + 1].e_up().resize(pop[cur][PopSize + i + 1].routes().size());
+				pop[cur][PopSize + i + 1].e_down().resize(pop[cur][PopSize + i + 1].routes().size());
 				size_t s = 0, e = 0;
-				for (int v = 1; v < pop[cur][i].routes().size(); v++)
+				for (int v = 1; v < pop[cur][PopSize + i + 1].routes().size(); v++)
 				{
-					if (pop[cur][i].routes()[v] == problem.depot())
+					if (pop[cur][PopSize + i + 1].routes()[v] == problem.depot())
 					{
 						//cout << "\nv = " << v << endl;
 						e = v;
-						IniE(&pop[cur][i], problem, s, e);
-						SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+						IniE(&pop[cur][PopSize + i + 1], problem, s, e);
+						SOA2(&pop[cur][PopSize + i + 1], problem, s, e, e); // 一次一台車(一條路線)
 						s = e; // 換下一條route
 					}
 				}
-
+				//cout << "PRP OK2" << endl;
 				//cnt++;
 			}
 			else
 			{
-				//cout << "PRP false" << endl; getchar();
+				cout << "PRP false2" << endl; getchar();
 			}
+			//cout << "after SOA2" << endl;
 			cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
 			//cout << "obj2 = " << obj1_rate << endl;
 			//cnt += problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate);
@@ -356,7 +375,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 
 			//bool mu1 = two_point_mutation(&pop[cur][PopSize + i]);
 			//bool mu2 = two_point_mutation(&pop[cur][PopSize + i + 1]);
-			const int num_refinement = 50;
+			const int num_refinement = 3;
 			size_t num1 = rand() % num_refinement, num2 = rand() % num_refinement;
 			const size_t NN_index = 0, NEH_index = 1, OPT2_index = 2;
 
@@ -397,25 +416,25 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//	//if (t < 33) {
 			//	//	NNR(&pop[cur][PopSize + i], problem);
 			//	//	RNNR(&pop[cur][PopSize + i], problem);
-			//	//	PNNR(&pop[cur][PopSize + i], problem);
-			//	PNN2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi);
+			//	PNNR(&pop[cur][PopSize + i], problem);
+			//	//PNN2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi);
 			//	//PNN2O(&pop[cur][PopSize + i], problem,100, normal_dis, normal_emi);
 			//	//total_evaluate += pop[cur][PopSize + i].num_evaluate(); //NN好像不算
-			//	//	/*problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
-			//	//	WriteFile(pop[cur][PopSize + i], file_name);
-			//	//	WriteFile(pop[cur][PopSize + i + 1], file_name);*/
+			//	problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
+			//		//WriteFile(pop[cur][PopSize + i], file_name);
+			//		//WriteFile(pop[cur][PopSize + i + 1], file_name);
 			//}
 			//if (num2 == NN_index) {
 			//	//if (t < 33) {
 			//	//	NNR(&pop[cur][PopSize + i + 1], problem);
 			//	//	RNNR(&pop[cur][PopSize + i + 1], problem);
-			//	//	PNNR(&pop[cur][PopSize + i + 1], problem);
-			//	PNN2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi);
+			//	PNNR(&pop[cur][PopSize + i + 1], problem);
+			//	//PNN2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi);
 			//	//total_evaluate += pop[cur][PopSize + i + 1].num_evaluate();//NN好像不算
 			//	//PNN2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi);
-			//	//	/*problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
-			//	//	WriteFile(pop[cur][PopSize + i], file_name);
-			//	//	WriteFile(pop[cur][PopSize + i + 1], file_name);*/
+			//	problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
+			//		//WriteFile(pop[cur][PopSize + i], file_name);
+			//		//WriteFile(pop[cur][PopSize + i + 1], file_name);
 			//}
 
 			//cout << "after FartoNearSort : " << endl;
@@ -433,30 +452,33 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//}
 
 			//cout << "after NEH : " << endl;
-			//if (num1 == NEH_index) {
-			//	//if(t >=33 && t < 66){
-			//	//	NEH(&pop[cur][PopSize + i], problem);
-			//	//	RNEH(&pop[cur][PopSize + i], problem);
-			//	//	PNEH(&pop[cur][PopSize + i], problem);
-			//	PNEH2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi);
-			//	//total_evaluate += pop[cur][PopSize + i].num_evaluate();//NEH也不算?
-			//	//PNEH2O(&pop[cur][PopSize + i], problem, 100, normal_dis, normal_emi);
-			//	/*problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
-			//	WriteFile(pop[cur][PopSize + i], file_name);
-			//	WriteFile(pop[cur][PopSize + i + 1], file_name);*/
-			//}
-			//if (num2 == NEH_index) {
-			//	//if (t >= 33 && t < 66) {
-			//	//	NEH(&pop[cur][PopSize + i + 1], problem);
-			//	//	RNEH(&pop[cur][PopSize + i + 1], problem);
-			//	//	PNEH(&pop[cur][PopSize + i + 1], problem);
-			//	PNEH2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi);
-			//	//total_evaluate += pop[cur][PopSize + i + 1].num_evaluate();//NEH也不算?
-			//	//PNEH2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi);
-			//	/*problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
-			//	WriteFile(pop[cur][PopSize + i], file_name);
-			//	WriteFile(pop[cur][PopSize + i + 1], file_name);*/
-			//}
+			if (num1 == NEH_index) {
+				//if(t >=33 && t < 66){
+				//	NEH(&pop[cur][PopSize + i], problem);
+				//	RNEH(&pop[cur][PopSize + i], problem);
+				PNEH(&pop[cur][PopSize + i], problem);
+				//PNEH2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi);
+				//total_evaluate += pop[cur][PopSize + i].num_evaluate();//NEH也不算?
+				//PNEH2O(&pop[cur][PopSize + i], problem, 100, normal_dis, normal_emi);
+				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
+				//problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1);
+				/*WriteFile(pop[cur][PopSize + i], file_name);
+				WriteFile(pop[cur][PopSize + i + 1], file_name);*/
+			}
+			if (num2 == NEH_index) {
+				//if (t >= 33 && t < 66) {
+				//	NEH(&pop[cur][PopSize + i + 1], problem);
+				//	RNEH(&pop[cur][PopSize + i + 1], problem);
+				PNEH(&pop[cur][PopSize + i + 1], problem);
+				//PNEH2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi);
+				//total_evaluate += pop[cur][PopSize + i + 1].num_evaluate();//NEH也不算?
+				//PNEH2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi);
+				//problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2);
+				
+				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
+				/*WriteFile(pop[cur][PopSize + i], file_name);
+				WriteFile(pop[cur][PopSize + i + 1], file_name);*/
+			}
 			//cout << "After OPO mutation" << endl; //這種mutation要放在後面做比較有效
 			/*if (mu1) {
 			OPO(&pop[cur][PopSize + i], problem);
@@ -467,43 +489,50 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 
 			//2-OPT
 			//cout << "After 2-OPT" << endl;
-			//if (num1 == OPT2_index) { // t 來看第幾代要做mutation
-			//						  //if(t >= 66){
-			//						  //	OPT2(&pop[cur][PopSize + i], problem);
-			//	OPT2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi, Min_fc, Min_emi);
-			//	total_evaluate += pop[cur][PopSize + i].num_evaluate();
-			//	/*bool progress = true;
-			//	while (progress)
-			//	{
-			//	progress = false;
-			//	double old = pop[cur][PopSize + i].objs()[0];
-			//	OPT2O(&pop[cur][PopSize + i], problem, 100 - father, normal_dis, normal_emi, Min_fc, Min_emi);
-			//	problem.Dp2Object(&pop[cur][PopSize + i], 100 - father);
-			//	total_evaluate += pop[cur][PopSize + i].num_evaluate() + 1;
-			//	if (pop[cur][PopSize + i].objs()[0] < old) progress = true;
+			if (num1 == OPT2_index) { // t 來看第幾代要做mutation
+				OPT2(&pop[cur][PopSize + i], problem);
+				//problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1);
+				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
 
-			//	}*/
+				//if (t >= 66) {
+				//	
+				//	OPT2O(&pop[cur][PopSize + i], problem, PopSize - father, normal_dis, normal_emi, Min_fc, Min_emi);
+				//	total_evaluate += pop[cur][PopSize + i].num_evaluate();
+				//}
+				//bool progress = true;
+				//while (progress)
+				//{
+				//	progress = false;
+				//	double old = pop[cur][PopSize + i].objs()[0];
+				//	OPT2O(&pop[cur][PopSize + i], problem, 100 - father, normal_dis, normal_emi, Min_fc, Min_emi);
+				//	//problem.Dp2Object(&pop[cur][PopSize + i], 100 - father);
+				//	total_evaluate += pop[cur][PopSize + i].num_evaluate() + 1;
+				//	if (pop[cur][PopSize + i].objs()[0] < old) progress = true;
 
-			//	//OPT2O(&pop[cur][PopSize + i], problem, 100, normal_dis, normal_emi, Min_fc, Min_emi);
-			//}
-			//if (num2 == OPT2_index) {
-			//	//if (t >= 66) {
-			//	//	OPT2(&pop[cur][PopSize + i + 1], problem);
-			//	OPT2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi, Min_fc, Min_emi);
-			//	total_evaluate += pop[cur][PopSize + i + 1].num_evaluate();
-			//	/*bool progress = true;
-			//	while (progress)
-			//	{
-			//	progress = false;
-			//	double old = pop[cur][PopSize + i + 1].objs()[0];
-			//	OPT2O(&pop[cur][PopSize + i + 1], problem, 100 - mother, normal_dis, normal_emi, Min_fc, Min_emi);
-			//	problem.Dp2Object(&pop[cur][PopSize + i + 1], 100 - mother);
-			//	total_evaluate += pop[cur][PopSize + i + 1].num_evaluate() + 1;
-			//	if (pop[cur][PopSize + i + 1].objs()[0] < old) progress = true;
-			//	}*/
+				//}
 
-			//	//OPT2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi, Min_fc, Min_emi);
-			//}
+				//OPT2O(&pop[cur][PopSize + i], problem, 100, normal_dis, normal_emi, Min_fc, Min_emi);
+			}
+			if (num2 == OPT2_index) {
+				//if (t >= 66) {
+				OPT2(&pop[cur][PopSize + i + 1], problem);
+				//problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2);
+				//problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);
+				/*OPT2O(&pop[cur][PopSize + i + 1], problem, PopSize - mother, normal_dis, normal_emi, Min_fc, Min_emi);
+				total_evaluate += pop[cur][PopSize + i + 1].num_evaluate();*/
+				/*bool progress = true;
+				while (progress)
+				{
+				progress = false;
+				double old = pop[cur][PopSize + i + 1].objs()[0];
+				OPT2O(&pop[cur][PopSize + i + 1], problem, 100 - mother, normal_dis, normal_emi, Min_fc, Min_emi);
+				problem.Dp2Object(&pop[cur][PopSize + i + 1], 100 - mother);
+				total_evaluate += pop[cur][PopSize + i + 1].num_evaluate() + 1;
+				if (pop[cur][PopSize + i + 1].objs()[0] < old) progress = true;
+				}*/
+
+				//OPT2O(&pop[cur][PopSize + i + 1], problem, 100, normal_dis, normal_emi, Min_fc, Min_emi);
+			}
 			//One Point Optimal Global
 			//cout << "after One point optimal (Global)" << endl;
 			//if (num1 == 3 && t <= 100) { // t 來看第幾代要做mutation
@@ -512,11 +541,27 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//if (num2 == 3 && t <= 100) {
 			//	OPOG(&pop[cur][PopSize + i + 1], problem);
 			//}
-
+			/*cout << "before RAP" << endl;
+			cout << pop[cur][PopSize + i] << endl;
+			cout << pop[cur][PopSize + i + 1] << endl;
+			
+			pop[cur][PopSize + i].ShowRoute();
+			pop[cur][PopSize + i + 1].ShowRoute();*/
 			//cout << "after ReArrangeMent : " << endl; //把routes重排回indv->vars()
-			/*RAP(&pop[cur][PopSize + i], problem);
-			RAP(&pop[cur][PopSize + i + 1], problem);*/
-
+			if (num1 != 0)
+			{
+				RAP(&pop[cur][PopSize + i], problem);
+				problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1);
+			}
+			if (num2 != 0)
+			{
+				RAP(&pop[cur][PopSize + i + 1], problem);
+				problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2);
+			}
+			
+			/*cout << "After RAP" << endl;
+			cout << pop[cur][PopSize + i] << endl;
+			cout << pop[cur][PopSize + i + 1] << endl; getchar();*/
 
 			//cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);//pure evaluate
 			//cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i + 1]);

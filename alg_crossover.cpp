@@ -321,12 +321,14 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 
 		for (int i = 0; i < (*c_speeds[c]).size(); i++)
 		{
-			if ((*c_speeds[c])[i] != 20.9294 && (*c_speeds[c])[i] != 15.3303)
-			{
-				//cout << "crossover speed = " << (*c_speeds[c])[i] << endl;// getchar();
-				//(*c_speeds[c])[i] = 20.9294;
-				(*c_speeds[c])[i] = 15.3303;
-			}
+			(*c_speeds[c])[i] = 25;
+			//if ((*c_speeds[c])[i] != 20.9294 && (*c_speeds[c])[i] != 15.3303)
+			//{
+			//	//cout << "crossover speed = " << (*c_speeds[c])[i] << endl;// getchar();
+			//	//(*c_speeds[c])[i] = 20.9294;
+			//	//(*c_speeds[c])[i] = 15.3303;
+			//	(*c_speeds[c])[i] = 25;
+			//}
 		}
 		//std::cout << "back OK" << endl;
 		//swap((*children[c])[0], *find(children[c]->begin(), children[c]->end(), Depot));

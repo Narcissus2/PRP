@@ -78,7 +78,8 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	fc_ = 1.4;
 	fd_ = 8;
 	//want_speed_ = 25;// 90 km/h = 25 m/s
-	want_speed_ = 20.9294; // 這是v* 對總cost最好的速度
+	//want_speed_ = 20.9294; // 這是v* 對總cost最好的速度
+	want_speed_ = 15.3303; // v* 最低油耗
 	cout << "Problem set ------- OK" << endl;
 	//cout << "Please Enter to continue..." << endl;  getchar();
 
@@ -103,12 +104,12 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 	//indv->ShowRoute();
 	//for (int i = 0; i < indv->speed().size(); i++) // 檢查這裡有沒有動到速度
 	//{
-	//	//cout << "speed " << i << " = " << speeds[i] << endl;
-	//	if (speeds[i] != 20.9294 && speeds[i] != 15.3303)
+	//	cout << "speed " << i << " = " << speeds[i] << endl;
+	//	/*if (speeds[i] != 20.9294 && speeds[i] != 15.3303)
 	//	{
 	//		cout << "size = " << speeds.size() << "i = " << i << endl;
 	//		cout << "SOA head this speed is " << speeds[i] << endl; getchar();
-	//	}
+	//	}*/
 	//}
 	indv->routes() = x; // 把x 先塞進routes
 	/*cout << "in PRP" << endl;
@@ -162,6 +163,7 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 	{
 		time_board.push_back(vector<double>());
 		double temp_load = n[x[i]].demand;
+		double temp_time = 0.0;
 		for (size_t j = 0; j < prob.num_node() - 1; j++)
 		{
 			if (j >= i)
@@ -174,7 +176,16 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 				}
 				else
 				{
-					time_board[i].push_back(Calculate_time(indv, i, j, 1)/ normalize_time);
+					temp_time = Calculate_time(indv, i, j, 1);
+					if (temp_time < 0)
+					{
+						time_board[i].push_back(time_punishment_);
+					}
+					else
+					{
+						time_board[i].push_back(temp_time / normalize_time);
+					}
+					
 				}
 			}
 			else
@@ -208,6 +219,10 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 	for (size_t i = 1; i < prob.num_node()-1; i++)
 	{
 		double dp_value = obj1 * fuel_board[0][i] + obj2 * time_board[0][i];
+		if (time_board[0][i] < 0)
+		{
+			dp_value = time_punishment_;
+		}
 		cut_point.push_back(vector<int>());
 		vector<int> tmp_cut;
 		bool cut_check = false;
@@ -217,8 +232,14 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 		{
 			//cout << "j = " << j << endl;
 			double temp_value = dp[i - j - 1] + obj1 * fuel_board[i - j][i] + obj2 * time_board[i - j][i];
-			if (temp_value < dp_value)
+			if (time_board[i-j][i] > 0 &&   temp_value < dp_value)
 			{
+				if (time_board[i - j][i] >= 1e8)
+				{
+					cout << "time_board[i-j][i] = " << time_board[i - j][i] << endl;
+					cout << "obj2 = " << obj2 << endl;
+				}
+				
 				//cout << "dp = " << dp_value << ' ' << "temp = " << temp_value << endl;
 				dp_value = temp_value;
 				if (cut_point[i - j - 1].size())
@@ -266,16 +287,16 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 		cout << cut_point[cut_point.size() - 1][i] << ' ';
 	}
 	cout << endl; getchar();*/
-	/*cout << "dp board : " << endl;
-	for (int i = 0; i<dp.size(); i++)
-	{
-		if (dp[i] > 1e5)
-		{
-			cout << "dp[" << i << "] = " << dp[i] << endl; getchar();
-		}
-		cout << "dp[" << i << "] = " << dp[i] << endl;
-	}*/
-	//cout << endl; getchar();
+	//cout << "dp board : " << endl;
+	//for (int i = 0; i<dp.size(); i++)
+	//{
+	//	/*if (dp[i] > 1e5)
+	//	{
+	//		cout << "dp[" << i << "] = " << dp[i] << endl; getchar();
+	//	}*/
+	//	cout << "dp[" << i << "] = " << dp[i] << endl;
+	//}
+	//cout << endl; //getchar();
 	/*cout << "cut size = " << cut_point[cut_point.size() - 1].size() << endl;
 	if (cut_point[cut_point.size() - 1].size() == 1)
 	{
@@ -301,6 +322,7 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 
 	while (indv->speed().size() < routes.size() - 1)//把speed 補好
 	{
+		cout << "what??" << endl; getchar();
 		indv->speed().push_back(want_speed());
 	}
 
@@ -325,7 +347,7 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 	}*/
 	//indv->ShowRoute();
 	//getchar();
-	//cout << "dp ok " << endl; getchar();
+	//cout << "dp ok " << endl; //getchar();
 
 	return this->EvaluateOldEncoding(indv);
 }
@@ -358,11 +380,12 @@ double CProblemSelf::Calculate_time(CIndividual *indv, int s, int e, int depot_n
 	const CIndividual::TObjVec &speed = indv->speed();
 	double speed_now = speed[s + depot_num - 1];
 	double time = distance_[depot_section_][x[s]] / speed_now;
-	//cout << depot_section_ << " > " << x[s] << endl;
-	/*cout << "start dis = " << distance_[depot_section_][x[s]] << endl;
-	cout << "start speed = " << speed_now << endl;
-	cout << "start -> " << time << endl;*/
-	//cout << s + depot_num -1<< "speed = " << speed_now << endl;
+	bool feasible_route = true;
+	/*cout << depot_section_ << " > " << x[s] << endl;
+	cout << "start dis = " << distance_[depot_section_][x[s]] << endl;
+	cout << s + depot_num - 1 << " start speed = " << speed_now << endl;
+	cout << "start -> " << time << endl;
+	cout << s + depot_num -1<< "speed = " << speed_now << endl;*/
 	for (int i = s; i <= e; i++)
 	{
 		// ---- check time window----- too early 
@@ -379,7 +402,8 @@ double CProblemSelf::Calculate_time(CIndividual *indv, int s, int e, int depot_n
 		{
 			//cout << i + depot_num << " normal bad time " << endl;
 			wait_time = time_punishment_;
-			indv->set_feasible(false);
+			feasible_route = false;
+			//indv->set_feasible(false);
 			//cout << "invalid time !!" << endl;  //getchar();
 		}
 		else wait_time = 0;
@@ -416,7 +440,7 @@ double CProblemSelf::Calculate_time(CIndividual *indv, int s, int e, int depot_n
 		// ---- total time = waiting time + service time + walk time -----
 		//time += wait_time + node_[x[i]].service_time + distance_[x[i]][x[i + 1]] / (speed[i]*1000/3600);
 		time += wait_time + s_time + walk_time;
-		//cout << "this time = " << time << endl; getchar();
+		//cout << "this time = " << time << endl;// getchar();
 
 	}
 	//cout << "speed = " << speed_now << endl;
@@ -424,16 +448,24 @@ double CProblemSelf::Calculate_time(CIndividual *indv, int s, int e, int depot_n
 	{
 		//cout << "to depot bad time" << endl;
 		time += time_punishment_;
-		indv->set_feasible(false);
+		feasible_route = false;
+		//indv->set_feasible(false);
 		//cout << "invalid time !!" << endl; // getchar();
 	}
 	time -= start_time_; // 這不算在我服務的時間
 
 	//cout << "time = " << time << endl; //getchar();
-	if (time > 100000 && indv->feasible())
+	if (time > 100000 && feasible_route)
 	{
 		cout << "time = " << time << endl;
 	}
+
+	if (! feasible_route)
+	{
+		//cout << "infea time = " << time << endl;
+		return -1;
+	}
+
 	return time; // 直接回傳是 秒(s)
 }
 // -----------------------------------------------------------
@@ -655,7 +687,18 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 			total_distance += Calculate_distance(routes, head, tail) / 1000; //m => km
 																			 //cout << "time" << head << " " << tail << " = " << head - depot_cnt << " " << tail - depot_cnt << endl;
 			//cout << "if feasible after dis: " << indv->feasible() << endl;
-			total_time += Calculate_time(indv, head - depot_cnt, tail - depot_cnt, depot_cnt);
+			double temp_time = Calculate_time(indv, head - depot_cnt, tail - depot_cnt, depot_cnt);
+			if (temp_time < 0) {
+				indv->set_feasible(false);
+				//cout << "head = " << head << ' ' << "tail = " << tail << endl;
+				//cout << "time problem" << endl;
+				total_time += time_punishment_;
+			}
+			else
+			{
+				total_time += Calculate_time(indv, head - depot_cnt, tail - depot_cnt, depot_cnt);
+			}
+			
 			//cout << "if feasible after time: " << indv->feasible() << endl;
 			//cout << "OK" << endl;
 			head = i + 1;
@@ -672,13 +715,6 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 	f[0] = total_fuel;
 	f[1] = total_time;
 	
-	if (total_distance == 485.16)
-	{
-		cout << "2 in total dis = " << total_distance << endl; //getchar();
-		indv->ShowRoute();
-		cout << "fuel = " << total_fuel << endl;
-		cout << "total time = " << total_time << endl; //getchar();
-	}
 	//cout << "fuel = " << total_fuel << endl;
 	//cout << "total dis = " << total_distance << endl;
 	//cout << "total time = " << total_time << endl; getchar();
@@ -703,15 +739,22 @@ bool CProblemSelf::EvaluateOldEncoding(CIndividual *indv) const
 	cout << "time = " << f[1] / 3600 << endl;
 	cout << "feasible = " << indv->feasible() << endl; getchar();*/
 	//cout << "= " << f[1] / 3600 << "(h)" << endl; //getchar();
+	//cout << "almost eva" << endl;
 	if (indv->feasible())
 	{
 		return true;
 	}
 	else
 	{
+		//indv->ShowRoute();
 		//cout << "final inf" << endl;
+		
+		//getchar();
 		f[0] = infeasible_value;
 		f[1] = infeasible_value;
+		/*cout << "f 0 = " << f[0] << endl;
+		cout << "f 1 = " << f[1] << endl;
+		getchar();*/
 		return false;
 	}
 
