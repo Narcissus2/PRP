@@ -97,7 +97,7 @@ void CRandomInitialization::KNN(CIndividual *indv, const BProblem &prob) const
 
 	// ----- set up the initial speed -----
 	CIndividual::TObjVec & speed = indv->speed();
-	speed.resize(x.size()*1.5);
+	speed.resize(x.size()*1.8);
 	for (int i = 0; i < speed.size(); i++)
 	{
 		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些
@@ -258,7 +258,7 @@ void CRandomInitialization::random_permutate_nd(CIndividual *indv, const BProble
 
 	//----- set up the initial speed (好像還不用設定)-----
 	CIndividual::TObjVec & speed = indv->speed();
-	speed.resize(x.size()*1.5);
+	speed.resize(x.size()*1.8);
 	for (int i = 0; i < speed.size(); i++)
 	{
 		//原本speed是時速幾KM，但地圖是給M，所以要乘1000，而且時間是給秒，所以要除3600，看來還是之後才能做這些

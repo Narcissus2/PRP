@@ -1,13 +1,15 @@
+"""
+
+    讀取explist.ini檔案去找測試結果和測式資料
+    讀取到Results \\ 資料夾下的 Run .txt 的檔案
+    畫出全部實驗的點和最佳曲線存在 RF \\
+
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-# ----------------------------------------------------------------
-# 讀取explist.ini檔案去找測試結果和測式資料
-# 讀取到Results \\ 資料夾下的 Run .txt 的檔案
-# 畫出全部實驗的點和最佳曲線
-# ----------------------------------------------------------------
-plt_color = ['b','g','r','c','m','y','k','w'] # 藍 綠 紅 青 品紅 黃 黑 白 
+plt_color = ['b','g','r','c','m','y','k','w'] # 藍 綠 紅 青 品紅 黃 黑 白 8種
 x_label_name = "Fuel"
 y_label_name = "Time"
 
@@ -35,12 +37,15 @@ for all_exp in range(len(explist)):
     data_name = []
     for i in range(want_line):
         data_name = fini.readline()
+    fini.close()
     data_name = data_name.split()
+
+    fig = plt.figure(figsize = (10,8)) # 設置畫圖的大小
     for run_num in range(20):
         data_path = 'Results//'+  algorithm + '-' + data_name[2] + '-' + 'Run' + str(run_num) + '.txt'
         print ("data path = ",data_path)
 
-        fini.close()
+        
         #os.system('pause')
 #讀完ini檔-----------------------------------------
 
@@ -65,13 +70,16 @@ for all_exp in range(len(explist)):
         #os.system('pause')
         f.close()
 #--------------------------------------------
-
+        
 #----------畫氣泡圖---------------------
 #把每個點畫出來
         i = 0
         x = []
         y = []
         point_list.sort()
+        # plt.plot(label = str(run_num))
+        # plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+        #    ncol=2, mode="expand", borderaxespad=0.)
         while i < len(point_list):
             j=0
             while j<2:
@@ -79,6 +87,8 @@ for all_exp in range(len(explist)):
                 j+=1
             #print(point_list[i][1]," ",point_list[i][2])
             plt.plot(point_list[i][0],point_list[i][1],plt_color[run_num%(len(plt_color)-1)] + 'o')
+            
+            # plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
             #plt.plot(point_list[i][0],point_list[i][1])
             k = 0
             check = 1
@@ -129,16 +139,16 @@ for all_exp in range(len(explist)):
         print ('x = ',x)
         print ('after ylen = ', len(y))
         print ('y = ',y)
-        plt.plot(x,y,'-')
+        plt.plot(x,y,plt_color[run_num%(len(plt_color)-1)] +'-',label = str(run_num) + 'runs')
+        plt.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.2)
         
-
-    #plt.show()
+        # plt.show()
 
 #------------------------------------------
 
 
 #----------視窗繪製---------------------
-        plt.title("vehicle routing-RF-"+data_name[2]+ '_' + str(run_num) + 'run')
+        plt.title("vehicle routing-RF-"+data_name[2])
         #label 設定 x,y標籤名稱
         plt.ylabel(y_label_name)
         plt.xlabel(x_label_name)
@@ -155,10 +165,12 @@ for all_exp in range(len(explist)):
 
 #顯示所有畫好的圖
 
-        save_name = 'RF//'+ data_name[2] + '-' + 'Run' + str(run_num) +  '.png'
-        plt.savefig(save_name)
-        plt.clf()
-        #plt.show()
+    save_name = 'RF//Sum//'+ data_name[2] + '.png'
 
-os.system("pause")
+    plt.savefig(save_name,dpi = 200)
+    plt.clf()
+    # plt.show()
+
+# os.system("pause")
 #------------------------------------------
+

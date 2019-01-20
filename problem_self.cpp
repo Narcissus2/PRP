@@ -322,6 +322,7 @@ bool CProblemSelf::PRPDP(CIndividual *indv, double obj1_rate) const
 
 	while (indv->speed().size() < routes.size() - 1)//把speed 補好
 	{
+		cout << indv->speed().size() << '<' << routes.size() - 1 << endl;
 		cout << "what??" << endl; getchar();
 		indv->speed().push_back(want_speed());
 	}
