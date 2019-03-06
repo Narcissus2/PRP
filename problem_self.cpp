@@ -51,12 +51,13 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	}
 	cout << endl;
 	}*/
-
+	double total_service_time = 0.0;
 	// time window
 	for (int i = 0; i < num_node_; i++)
 	{
 		Node tmp_node;
 		ifile >> tmp_node.number >> tmp_node.name >> tmp_node.demand >> tmp_node.ready_time >> tmp_node.due_time >> tmp_node.service_time;
+		total_service_time += tmp_node.service_time;
 		if (tmp_node.service_time == 0)
 		{
 			//cout << "depot = " << depot_section_ << endl;
@@ -64,6 +65,7 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 		}
 		node_.push_back(tmp_node);
 	}
+	cout << "total service time = " << total_service_time << endl;// getchar();
 	start_time_ = node_[depot_section_].ready_time;
 	cout << "start time = " << start_time_ << endl;
 	// ----- output the map information -----
@@ -78,8 +80,8 @@ CProblemSelf::CProblemSelf(std::size_t num_vars, std::size_t num_objs, const std
 	fc_ = 1.4;
 	fd_ = 8;
 	//want_speed_ = 25;// 90 km/h = 25 m/s
-	//want_speed_ = 20.9294; // 這是v* 對總cost最好的速度
-	want_speed_ = 15.3303; // v* 最低油耗
+	want_speed_ = 20.9294; // 這是v* 對總cost最好的速度
+	//want_speed_ = 15.3303; // v* 最低油耗
 	cout << "Problem set ------- OK" << endl;
 	//cout << "Please Enter to continue..." << endl;  getchar();
 

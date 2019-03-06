@@ -104,14 +104,7 @@ void CRandomInitialization::KNN(CIndividual *indv, const BProblem &prob) const
 		//speed[i] = prob.avg_speed(); // 單位是 m/s
 		speed[i] = prob.want_speed(); // 90 km/h
 	}
-	//for (int i = 0; i < speed.size(); i++) // 檢查這裡有沒有動到速度
-	//{
-	//	if (speed[i] != 20.9294 && speed[i] != 15.3303)
-	//	{
-	//		cout << "i = " << i << endl;
-	//		cout << "ini this speed is " << speed[i] << endl; getchar();
-	//	}
-	//}
+	
 
 }
 
@@ -394,15 +387,16 @@ void CRandomInitialization::operator()(CPopulation *pop, const BProblem &prob) c
 		}*/
 		//-------------------------------------------------------
 		this->KNN(&(*pop)[i], prob);
-		/*if (i < pop->size()/2)
-		{
-			this->KNN(&(*pop)[i], prob);
-		}
-		else
-		{
-			this->rand_permutate_nd_time(&(*pop)[i], prob);
-			this->random_permutate_nd(&(*pop)[i], prob);
-		}*/
+		//this->random_permutate_nd(&(*pop)[i], prob);
+		//if (i < pop->size()*0.5)
+		//{
+		//	this->KNN(&(*pop)[i], prob);
+		//}
+		//else
+		//{
+		//	//this->rand_permutate_nd_time(&(*pop)[i], prob);
+		//	this->random_permutate_nd(&(*pop)[i], prob);
+		//}
 		//cout << "sol = " << (*pop)[i].objs()[0] << endl;
 	}
 }

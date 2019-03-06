@@ -321,7 +321,10 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 
 		for (int i = 0; i < (*c_speeds[c]).size(); i++)
 		{
-			(*c_speeds[c])[i] = 25;
+			//(*c_speeds[c])[i] = 25;
+			(*c_speeds[c])[i] = 20.9294;
+			//(*c_speeds[c])[i] = 15.3303;
+			//cout << "yes" << endl; getchar();
 			//if ((*c_speeds[c])[i] != 20.9294 && (*c_speeds[c])[i] != 15.3303)
 			//{
 			//	//cout << "crossover speed = " << (*c_speeds[c])[i] << endl;// getchar();
@@ -341,8 +344,177 @@ bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child
 		}
 		cout << endl;
 	}
-	system("pause");*/
-	//std::cout << "finish LOX" << endl;
+	*/
+	return true;
+
+}// COrderedCrossover::operator()
+
+ // ----------------------------------------------------------------------------------
+ //		CLinearOrderedCrossover : Linear Ordered Crossover (LOX) 2, rank -> speed
+ // ----------------------------------------------------------------------------------
+
+bool CLinearOrderedCrossover::operator()(CIndividual *child1, CIndividual *child2, const CIndividual &parent1, const CIndividual &parent2, double cr, double frank, double mrank) const
+{
+	//const size_t Depot = parent1.vars()[0]; // 現在沒depot在x
+	//std::cout << "in LOX" << endl;
+	if (MathAux::random(0.0, 1.0) > cr) return false; // not crossovered
+
+	child1->speed().resize(parent1.speed().size());
+	child2->speed().resize(parent2.speed().size());
+	CIndividual::TDecVec *children[] = { &child1->vars(), &child2->vars() };
+	CIndividual::TObjVec *c_speeds[] = { &child1->speed(), &child2->speed() };
+	const CIndividual::TDecVec *parents[] = { &parent1.vars(), &parent2.vars() };
+
+	for (size_t c = 0; c < 2; c += 1)
+	{
+		children[c]->resize(parents[c]->size());
+
+		size_t cut1 = rand() % children[c]->size(), cut2 = rand() % children[c]->size();
+		if (cut1 > cut2) swap(cut1, cut2);
+
+		size_t father = c;
+
+		set<CIndividual::TGene> exists;
+		for (size_t i = cut1; i <= cut2; i += 1) // keep the enclosed section
+		{
+			(*children[c])[i] = (*parents[father])[i];
+			//(*c_speeds[c])[i] = parent1.speed()[i];
+			exists.insert((*children[c])[i]);
+		}
+		//std::cout << "insert OK" << endl;
+		size_t c_pos = 0, m_pos = c_pos; //Linear  c_pos -> 1 from head to tail 
+		size_t mother = !c;
+		//std::cout << "cut1 = " << cut1 << endl;
+		while (c_pos < cut1) //前半
+		{
+			while (exists.count((*parents[mother])[m_pos]) > 0) m_pos = (m_pos + 1) % parents[mother]->size();
+
+			(*children[c])[c_pos] = (*parents[mother])[m_pos];
+			//(*c_speeds[c])[c_pos] = parent2.speed()[m_pos];
+			exists.insert((*children[c])[c_pos]);
+
+			c_pos = c_pos + 1;
+			//std::cout << "c_pos = " << c_pos << endl;
+		}
+		//std::cout << "front OK" << endl;
+		c_pos = cut2 + 1;
+		while (c_pos < children[c]->size()) //後半
+		{
+			while (exists.count((*parents[mother])[m_pos]) > 0) m_pos = (m_pos + 1) % parents[mother]->size();
+
+			(*children[c])[c_pos] = (*parents[mother])[m_pos];
+			(*c_speeds[c])[c_pos] = parent2.speed()[m_pos];
+			exists.insert((*children[c])[c_pos]);
+
+			c_pos = c_pos + 1;
+		}
+
+		//random give speed
+		/*frank = rand() % 100;
+		mrank = rand() % 100;*/
+
+		// rank speed 
+		if (c == 0)
+		{
+			//cout << "father " << frank << endl; getchar();
+			for (int i = 0; i < (*c_speeds[c]).size(); i++)
+			{
+				/*if (frank < 33.4)
+				{
+					(*c_speeds[c])[i] = 15.3303;
+				}
+				else if (frank < 66.7)
+				{
+					(*c_speeds[c])[i] = 20.9294;
+				}
+				else
+				{
+					(*c_speeds[c])[i] = 25;
+				}*/
+
+				(*c_speeds[c])[i] = 15.3303 + (int)(frank / 10)* (25-15.3303)/10;
+				if (frank >= 90)  (*c_speeds[c])[i] = 25;
+				//cout << "rank = " << frank << endl;
+				//cout << (*c_speeds[c])[i] << endl; getchar();
+				/*if (frank < 20)
+				{
+					(*c_speeds[c])[i] = 15.3303;
+				}
+				else if (frank < 40)
+				{
+					(*c_speeds[c])[i] = (20.9294+ 15.3303)/2;
+				}
+				else if (frank < 60)
+				{
+					(*c_speeds[c])[i] = 20.9294;
+				}
+				else if (frank < 80)
+				{
+					(*c_speeds[c])[i] = (20.9294+25)/2;
+				}
+				else
+				{
+					(*c_speeds[c])[i] = 25;
+				}*/
+			}
+		}
+		else
+		{
+			//cout << "mother " << mrank << endl; getchar();
+			for (int i = 0; i < (*c_speeds[c]).size(); i++)
+			{
+				/*if (mrank < 33.4)
+				{
+					(*c_speeds[c])[i] = 15.3303;
+				}
+				else if (mrank < 66.7)
+				{
+					(*c_speeds[c])[i] = 20.9294;
+				}
+				else
+				{
+					(*c_speeds[c])[i] = 25;
+				}*/
+
+				(*c_speeds[c])[i] = 15.3303 + (int)(mrank / 10) * (25 - 15.3303) / 10;
+				//cout << "rank = " << mrank << endl;
+				if (mrank >= 90)  (*c_speeds[c])[i] = 25;
+				//cout << (*c_speeds[c])[i] << endl; getchar();
+				/*if (mrank < 20)
+				{
+					(*c_speeds[c])[i] = 15.3303;
+				}
+				else if (mrank < 40)
+				{
+					(*c_speeds[c])[i] = (20.9294 + 15.3303) / 2;
+				}
+				else if (mrank < 60)
+				{
+					(*c_speeds[c])[i] = 20.9294;
+				}
+				else if (mrank < 80)
+				{
+					(*c_speeds[c])[i] = (20.9294 + 25) / 2;
+				}
+				else
+				{
+					(*c_speeds[c])[i] = 25;
+				}*/
+			}
+
+
+		}
+		
+	}// for - children 0 and 1
+	 /*for (size_t c = 0; c < 2; c += 1)
+	 {
+	 cout << "c" << c << "=";
+	 for (size_t i = 0; i < children[c]->size(); i++) {
+	 cout << (*children[c])[i] << ' ';
+	 }
+	 cout << endl;
+	 }
+	 */
 	return true;
 
 }// COrderedCrossover::operator()

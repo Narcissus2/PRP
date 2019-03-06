@@ -1574,10 +1574,13 @@ bool SpeedOptimalAlgorithm2::operator()(CIndividual *indv, const BProblem &prob,
 	double v_star_fuel = 0.0, v_star_total = 0.0,v_quick = 0.0;
 	v_star_fuel = 15.3303; //minimizes fuel consumption costs,(about 55 km/h)
 	//v_star_fuel = 20.9294;
+	//v_star_fuel = 25;
 	v_star_total = 20.9294; //minimizes fuel consumption costs and wage of driver(about 90km,h) 
 	//v_star_total = 15.3303;
 	//v_star_total = 25;
 	v_quick = 25;
+	//v_quick = 15.3303;
+	//v_quick = 20.9294;
 	// 開始修改速度
 	for (int i = s + 1; i <= e; i++)
 	{
@@ -1586,7 +1589,12 @@ bool SpeedOptimalAlgorithm2::operator()(CIndividual *indv, const BProblem &prob,
 		{
 			//cout << "s1 ";
 			//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);// my realize version
-			speeds[i - 1] = v_star_total;
+			//speeds[i - 1] = v_star_total; //ori_0220
+			speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);
+			if (speeds[i - 1] < v_star_fuel)
+			{
+				speeds[i - 1] = v_star_fuel;
+			}
 			//cout << "i-1 = " << i-1 << " " << speeds[i - 1] << " = ";
 			for (int j = i; j <= e; j++)
 			{
@@ -1601,25 +1609,25 @@ bool SpeedOptimalAlgorithm2::operator()(CIndividual *indv, const BProblem &prob,
 					eup[j] = edown[j] + n[routes[j]].service_time;
 				}
 			}
-			if (edown[i] < n[routes[i]].ready_time) // too early 
-			{
-				//cout << "s1 ";
-				//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);// my realize version
-				speeds[i - 1] = v_star_fuel;
-				for (int j = i; j <= e; j++)
-				{
-					edown[j] = eup[j - 1] + distance[routes[j - 1]][routes[j]] / speeds[j - 1];
-					if (edown[j] < n[routes[j]].ready_time)
-					{
-						eup[j] = n[routes[j]].ready_time + n[routes[j]].service_time;
-					}
-					else
-					{
-						eup[j] = edown[j] + n[routes[j]].service_time;
-					}
-				}
+			//if (edown[i] < n[routes[i]].ready_time) // too early 
+			//{
+			//	//cout << "s1 ";
+			//	//speeds[i - 1] = distance[routes[i - 1]][routes[i]] / (n[routes[i]].ready_time - eup[i - 1]);// my realize version
+			//	speeds[i - 1] = v_star_fuel;
+			//	for (int j = i; j <= e; j++)
+			//	{
+			//		edown[j] = eup[j - 1] + distance[routes[j - 1]][routes[j]] / speeds[j - 1];
+			//		if (edown[j] < n[routes[j]].ready_time)
+			//		{
+			//			eup[j] = n[routes[j]].ready_time + n[routes[j]].service_time;
+			//		}
+			//		else
+			//		{
+			//			eup[j] = edown[j] + n[routes[j]].service_time;
+			//		}
+			//	}
 
-			}
+			//}
 		}
 		else
 		{

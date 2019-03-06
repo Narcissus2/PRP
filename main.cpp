@@ -58,7 +58,7 @@ int main()
 		ofstream IGD_results(nsgaiii.name() + "-" + problem->name() + "-IGD.txt"); // output file for IGD values per run
 
 																				   // ----- Run the algorithm to solve the designated function -----
-		const size_t NumRuns = 20; // 20 is the setting in NSGA-III paper
+		const size_t NumRuns = 10; // 20 is the setting in NSGA-III paper
 		for (size_t r = 0; r<NumRuns; r += 1)
 			/*bool set_check = false;
 			const size_t set_num = 1000000;
@@ -70,22 +70,25 @@ int main()
 			// --- Write number of runs to problem.txt
 			fstream file;
 			string file_name = problem->name() + ".txt";
-			file.open(file_name, ios::out | ios::app);
+			/*file.open(file_name, ios::out | ios::app);
 			if (!file) cout << "Can't open " << file_name << endl;
 			file << r + 1 << " Runs" << endl;
-			file.close();
+			file.close();*/
 
 			// --- Solve
 			CPopulation solutions; //pop.size() = 0
-			nsgaiii.Solve(&solutions, *problem);
+			//nsgaiii.Solve(&solutions, *problem);
 			// --- Output the result
-			string logfname = "Results\\" + nsgaiii.name() + "-" + problem->name() + "-Run" + IntToStr(r) + ".txt"; // e.g. NSGAIII-DTLZ1(3)-Run0.txt
-			SaveScatterData(logfname, solutions);
+			//string logfname = "Results\\" + nsgaiii.name() + "-" + problem->name() + "-Run" + IntToStr(r) + ".txt"; // e.g. NSGAIII-DTLZ1(3)-Run0.txt
+			string logfname = "Results\\Normal\\" + problem->name() + "_normal" + IntToStr(r) + ".txt";
+			//SaveScatterData(logfname, solutions);
 
 			// --- Calculate the performance metric (IGD)
 			TFront PF, approximation;
-			IGD_results << IGD(LoadFront(PF, "PF\\" + problem->name() + "-PF.txt"), LoadFront(approximation, logfname)) << endl;
+			IGD_results << IGD(LoadFront(PF, "PF\\normal\\" + problem->name() + "-PF_normal.txt"), LoadFront(approximation, logfname)) << endl;
 
+			//cout << "OK" << endl; getchar();
+			continue;
 			// --- Visualization (Show the last 3 dimensions. You need gnuplot.)
 			//ShowPopulation(gplot, solutions, "gnuplot-show"); system("pause");
 

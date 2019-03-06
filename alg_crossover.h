@@ -91,6 +91,12 @@ public:
 	{
 		return operator()(c1, c2, p1, p2, cr_);
 	}
+	//me
+	bool operator()(CIndividual *c1, CIndividual *c2, const CIndividual &p1, const CIndividual &p2, double cr, double frank,double mrank) const;
+	bool operator()(CIndividual *c1, CIndividual *c2, const CIndividual &p1, const CIndividual &p2, double frank,double mrank ) const
+	{
+		return operator()(c1, c2, p1, p2, cr_,frank,mrank);
+	}
 
 private:
 	double cr_; //crossover rate

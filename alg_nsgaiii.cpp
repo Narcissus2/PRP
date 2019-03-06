@@ -114,7 +114,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 	//MyTimers.GetTimer("RandomIni")->end();
 	double cnt = 0;
 	int retry_num = 0, total_evaluate = 0;
-	cout << "new" << endl;
+	//cout << "new" << endl;
 	for (size_t i = 0; i < PopSize; i += 1)
 	{
 		/*if (problem.EvaluateDpCar(&pop[cur][i]))
@@ -135,7 +135,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 					//cout << "\nv = " << v << endl;
 					e = v;
 					IniE(&pop[cur][i], problem, s, e);
-					SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
+					//SOA2(&pop[cur][i], problem, s, e, e); // 一次一台車(一條路線)
 					s = e; // 換下一條route
 				}
 			}
@@ -271,6 +271,9 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 
 			//crossover function
 			//OX(&pop[cur][PopSize+i], &pop[cur][PopSize+i+1], pop[cur][father], pop[cur][mother]);
+			double father_rank = (double)father / PopSize * 100,
+				   mother_rank = (double)mother / PopSize * 100;
+			//LOX(&pop[cur][PopSize + i], &pop[cur][PopSize + i + 1], pop[cur][father], pop[cur][mother],father_rank,mother_rank);
 			LOX(&pop[cur][PopSize + i], &pop[cur][PopSize + i + 1], pop[cur][father], pop[cur][mother]);
 			//cout << "crossover OK" << endl;
 			//bool mu1 = false, mu2 = false; //不要mutation 還是要有mu1,mu2
@@ -301,8 +304,8 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 				obj1_rate2 = 99;
 			}
 			//cout << "obj1 = " << obj1_rate << endl;
-			if (problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1))//100代表100%用距離切0%用emission切
-			//if (problem.PRPDP(&pop[cur][PopSize + i],90))
+			//if (problem.PRPDP(&pop[cur][PopSize + i], obj1_rate1))//100代表100%用距離切0%用emission切
+			if (problem.PRPDP(&pop[cur][PopSize + i],50))
 			{
 				//cout << "father" << endl;
 				pop[cur][PopSize + i].e_up().resize(pop[cur][PopSize + i].routes().size());
@@ -315,7 +318,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 						//cout << "\nv = " << v << endl;
 						e = v;
 						IniE(&pop[cur][PopSize + i], problem, s, e);
-						SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
+						//SOA2(&pop[cur][PopSize + i], problem, s, e, e); // 一次一台車(一條路線)
 						s = e; // 換下一條route
 					}
 				}
@@ -331,8 +334,8 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			//cout << "after SOA1" << endl;
 			cnt += problem.EvaluateOldEncoding(&pop[cur][PopSize + i]);
 
-			if (problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2))//100代表100%用距離切0%用emission切
-			//if (problem.PRPDP(&pop[cur][PopSize + i + 1], 90))
+			//if (problem.PRPDP(&pop[cur][PopSize + i + 1], obj1_rate2))//100代表100%用距離切0%用emission切
+			if (problem.PRPDP(&pop[cur][PopSize + i + 1], 50))
 			{
 				//cout << "mother" << endl;
 				pop[cur][PopSize + i + 1].e_up().resize(pop[cur][PopSize + i + 1].routes().size());
@@ -345,7 +348,7 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 						//cout << "\nv = " << v << endl;
 						e = v;
 						IniE(&pop[cur][PopSize + i + 1], problem, s, e);
-						SOA2(&pop[cur][PopSize + i + 1], problem, s, e, e); // 一次一台車(一條路線)
+						//SOA2(&pop[cur][PopSize + i + 1], problem, s, e, e); // 一次一台車(一條路線)
 						s = e; // 換下一條route
 					}
 				}
@@ -378,6 +381,10 @@ void CNSGAIII::Solve(CPopulation *solutions, const BProblem &problem)
 			const int num_refinement = 3;
 			size_t num1 = rand() % num_refinement, num2 = rand() % num_refinement;
 			const size_t NN_index = 0, NEH_index = 1, OPT2_index = 2;
+			// 先不要 local search
+			num1 = 0;
+			num2 = 0;
+			
 
 			/*if (mu1) {
 			OPOG(&pop[cur][PopSize + i], problem);
